@@ -1,15 +1,54 @@
 import numpy as np
-from tools import remove_candidates
+import pulp
+from tools import remove_candidates, borda_matrix
 
 
 def SNTV(profile, k):
+    """
+    Elect k candidates with the largest plurality scores.
+    
+    Args:
+    profile (np.ndarray): (candidates x voters) Preference Profile. 
+    k (int): Number of candidates to elect
+    
+    Returns:
+    elected (np.ndarray): Winning candidates
+    """
     first_choice_votes = profile[0,:]
     cands, counts = np.unique(first_choice_votes, return_counts = True)
     elected = cands[np.argsort(counts)[::-1][:min(k, len(cands))]]
     return elected
 
 
+def Bloc(profile, k):
+    """
+    Elect k candidates with the largest k-approval scores.
+    
+    Args:
+    profile (np.ndarray): (candidates x voters) Preference Profile. 
+    k (int): Number of candidates to elect
+    
+    Returns:
+    elected (np.ndarray): Winning candidates
+    """
+    first_choice_votes = profile[:k,:]
+    cands, counts = np.unique(first_choice_votes, return_counts = True)
+    elected = cands[np.argsort(counts)[::-1][:min(k, len(cands))]]
+    return elected
+
+
 def STV(profile, k):
+    """
+    Elect k candidates with the Single Transferrable Vote election.
+    Uses the droop quota with fractional transfer, and breaks ties randomly.
+    
+    Args:
+    profile (np.ndarray): (candidates x voters) Preference Profile. 
+    k (int): Number of candidates to elect
+    
+    Returns:
+    elected (np.ndarray): Winning candidates
+    """
     m,n = profile.shape
     droop = int((n/(k+1)) + 1)
     elected_mask = np.zeros(m)
@@ -35,7 +74,8 @@ def STV(profile, k):
 
         # Check for candidates that satisfy droop score and are still in the race:
         satisfies = np.where((candidate_scores >= droop) & (elected_mask != 1) & (eliminated_mask != 1))[0]
-
+        
+        # If there are such candidates, elect them.
         if len(satisfies) > 0:
             # Break ties randomly.
             np.random.shuffle(satisfies)
@@ -59,13 +99,15 @@ def STV(profile, k):
                 for v in c_voters:
                     while (elected_mask[profile[voter_indices[v],v]] == 1) or (eliminated_mask[profile[voter_indices[v],v]] == 1):
                         voter_indices[v] += 1
+                        
                         # ballot fully exhausted
                         if voter_indices[v] >= m:
-                            print('ballot exhausted')
                             voter_indices[v] = -1
                             break
         
+        # Otherwise, delete the candidate with the lowest plurality score.
         else:
+            # Again breaking ties randomly
             random_tiebreakers = np.random.rand(m)
             structured_array = np.core.records.fromarrays([candidate_scores, random_tiebreakers], 
                                                         names='scores,rand')
@@ -80,23 +122,30 @@ def STV(profile, k):
                     for v in e_voters:
                         while (elected_mask[profile[voter_indices[v],v]] == 1) or (eliminated_mask[profile[voter_indices[v],v]] == 1):
                             voter_indices[v] += 1
+                            
                             # ballot fully exhausted
                             if voter_indices[v] >= m:
-                                print('ballot exhausted')
                                 voter_indices[v] = -1
                                 break
                                 
                     # only eliminate one candidate per round
                     break
 
-    #if elected_count < k:
-    #    elected = np.array([i for i in range(m) if i not in eliminated])
-
     return np.where(elected_mask == 1)[0]
 
 
 
 def Borda(profile, k):
+    """
+    Elect k candidates with the largest Borda scores.
+    
+    Args:
+    profile (np.ndarray): (candidates x voters) Preference Profile. 
+    k (int): Number of candidates to elect
+    
+    Returns:
+    elected (np.ndarray): Winning candidates
+    """
     m,n = profile.shape
     candidate_scores = np.zeros(m)
     
@@ -110,46 +159,95 @@ def Borda(profile, k):
     
     
 
-def RandomDictator(profile,k):
+def RandomDictator(profile,k, rho = 1):
+    """
+    Elect k candidates with k iterations of Random Dictator.
+    At each iteration, randomly choose a voter and elect its first choice.
+    Remove that candidate from all preference profiles and repeat.
+    
+    Args:
+    profile (np.ndarray): (candidates x voters) Preference Profile. 
+    k (int): Number of candidates to elect
+    
+    Returns:
+    elected (np.ndarray): Winning candidates
+    """
     m,n = profile.shape
+    voter_probability = np.ones(n)/n
     voter_indices = np.zeros(n, dtype = int)
     elected = np.zeros(k, dtype = int) - 1
     
     for i in range(k):
-        first_choice_votes = profile[voter_indices, np.arange(n)]
-        winner = np.random.choice(first_choice_votes)
+        dictator = np.random.choice(range(n), p = voter_probability)
+        winner = profile[voter_indices[dictator], dictator]
         elected[i] = winner
         
-        # removes winning candidate from profile
+        # Find who voted for the winner
+        first_choice_votes = profile[voter_indices, np.arange(n)]
         mask = (first_choice_votes == winner)
+        
+        # Adjusts voter probability for the next round
+        voter_probability[mask] *= 0.8
+        voter_probability /= np.sum(voter_probability)
+        
+        # Effectively removes winning candidate from profile
         voter_indices[mask] += 1
         
     return elected
 
 
-def PRD(profile,k, p = None, q = None):
+def PRD(profile,k, p = None, q = None, rho = 1):
+    """
+    Elect k candidates with k iterations of Proportional Random Dictator (PRD).
+    At each iteration, with probability p choose a winner with 
+    the proportional to q's rule. With probability (1-p) instead choose a
+    winner with RandomDictator. Remove that candidate from all preference profiles and repeat.
+    
+    Args:
+    profile (np.ndarray): (candidates x voters) Preference Profile. 
+    k (int): Number of candidates to elect
+    p (float, optional): probability of proportional to q's rule
+    q (float, optional): power in proportional to q's
+    
+    Returns:
+    elected (np.ndarray): Winning candidates
+    """
+    
     m,n = profile.shape
+    
+    # Default setting
     if p is None:
         p = 1 / (m - 1)
     if q is None:
         q = 2
-        
+    
+    voter_probability = np.ones(n)/n
     voter_indices = np.zeros(n, dtype = int)
     elected = np.zeros(k, dtype = int) - 1
     for i in range(k):
         first_choice_votes = profile[voter_indices, np.arange(n)]
+        
         coin_flip = np.random.uniform()
-        if coin_flip <=p:
+        if coin_flip <= p:
             cands,counts = np.unique(first_choice_votes, return_counts = True)
             prob = np.power(counts*1.0, q)
             prob /= np.sum(prob)
             winner = np.random.choice(cands, p = prob)
         else:
-            winner = np.random.choice(first_choice_votes)
+            #winner = np.random.choice(first_choice_votes)
+            dictator = np.random.choice(range(n), p = voter_probability)
+            winner = profile[voter_indices[dictator], dictator]
             
         elected[i] = winner
+        
         # removes winning candidate from profile
         mask = (first_choice_votes == winner)
+
+        # Adjusts voter probability for the next round
+        voter_probability[mask] *= 0.8
+        voter_probability /= np.sum(voter_probability)
+        
+        # Effectively removes winning candidate from profile
         voter_indices[mask] += 1
         
     return elected
@@ -157,35 +255,48 @@ def PRD(profile,k, p = None, q = None):
 
 
 def PluralityVeto(profile, k):
+    """
+    Elect k candidates with the Plurality Veto mechanism. Counts 
+    initial plurality scores for every candidate then, in a randomized order,
+    lets voters veto candidates until there are only k left.
+    
+    Args:
+    profile (np.ndarray): (candidates x voters) Preference Profile. 
+    k (int): Number of candidates to elect
+    
+    Returns:
+    elected (np.ndarray): Winning candidates
+    """
     m,n = profile.shape
     candidate_scores = np.zeros(m)
     eliminated = np.zeros(m - k) - 1
     eliminated_count = 0
     
-    # count initial plurality scores 
+    # Count initial plurality scores 
     first_choice_votes = profile[0,:]
     for c in first_choice_votes:
         candidate_scores[c] += 1
         
+    # Find candidates with 0 plurality score
     zero_scores = np.where(candidate_scores == 0)[0]
     if len(zero_scores) > m - k:
         np.random.shuffle(zero_scores)
         zero_scores = zero_scores[:(m-k)]
             
+    # And remove them from the preference profile
     profile = remove_candidates(profile, zero_scores)
     eliminated[:len(zero_scores)] = zero_scores
     eliminated_count += len(zero_scores)
     
-    # veto
+    # Veto in a randomize order
     random_order = list(range(n))
     np.random.shuffle(random_order)
     while eliminated_count < (m - k):
         for i,v in enumerate(random_order):
             least_preferred = profile[-1,v]
+            # A veto decrements the candidates score by 1
             candidate_scores[least_preferred] -= 1
             if candidate_scores[least_preferred] <= 0:
-                if least_preferred in eliminated:
-                    print(profile)
                 profile = remove_candidates(profile, [least_preferred])
                 eliminated[eliminated_count] = least_preferred
                 eliminated_count += 1
@@ -196,8 +307,134 @@ def PluralityVeto(profile, k):
     return elected
                 
     
+def ChamberlainCourant(profile,k):
+    """
+    Elect k candidates with the Chamberlain Courant Mechanism. 
+    This function uses an integer linear program to compute an optimal 
+    assignment of voters to candidates to maximize the assignment scores
+    (where assignment scores are calculated with the borda score).
     
+    Args:
+    profile (np.ndarray): (candidates x voters) Preference Profile. 
+    k (int): Number of candidates to elect
     
+    Returns:
+    elected (np.ndarray): Winning candidates
+    """
+    m,n = profile.shape
+    B = borda_matrix(profile)
     
+    problem = pulp.LpProblem("Chamberlin-Courant", pulp.LpMaximize)
+
+    # Voter assignment variable
+    x = pulp.LpVariable.dicts("x", ((i, j) for i in range(m) for j in range(n)), cat='Binary')
+    # Candidate 'elected' variable
+    y = pulp.LpVariable.dicts("y", range(m), cat='Binary')
+
+    # Objective function:
+    problem += pulp.lpSum(B[i, j] * x[i, j] for i in range(m) for j in range(n))
+
+    # Each voter is assigned to exactly one candidate
+    for j in range(n):
+        problem += pulp.lpSum(x[i, j] for i in range(m)) == 1
+
+    # A voter can only be assigned to a candidate if that candidate is elected
+    for i in range(m):
+        for j in range(n):
+            problem += x[i, j] <= y[i]
+
+    # Elect exactly k candidates
+    problem += pulp.lpSum(y[i] for i in range(m)) == k
+
+    problem.solve()
+    elected = np.array([i for i in range(m) if pulp.value(y[i]) == 1])
+    return elected
+
+
+def Monroe(profile,k):
+    """
+    Elect k candidates with the Monroe Mechanism. 
+    This function uses an integer linear program to compute an optimal 
+    assignment of voters to candidates to maximize the sum of assignment scores
+    (where assignment scores are calculated with the borda score).
+    With the added constraint that each candidate can only represent 
+    exactly floor(n/k) or ceiling(n/k) voters.
+    
+    Args:
+    profile (np.ndarray): (candidates x voters) Preference Profile. 
+    k (int): Number of candidates to elect
+    
+    Returns:
+    elected (np.ndarray): Winning candidates
+    """
+    m,n = profile.shape
+    B = borda_matrix(profile)
+    
+    problem = pulp.LpProblem("Chamberlin-Courant", pulp.LpMaximize)
+
+    # Voter assignment variable
+    x = pulp.LpVariable.dicts("x", ((i, j) for i in range(m) for j in range(n)), cat='Binary')
+    # Candidate 'elected' variable
+    y = pulp.LpVariable.dicts("y", range(m), cat='Binary')
+
+    # Objective function:
+    problem += pulp.lpSum(B[i, j] * x[i, j] for i in range(m) for j in range(n))
+
+    # Each voter is assigned to exactly one candidate
+    for j in range(n):
+        problem += pulp.lpSum(x[i, j] for i in range(m)) == 1
+
+    # A voter can only be assigned to a candidate if that candidate is elected
+    for i in range(m):
+        for j in range(n):
+            problem += x[i, j] <= y[i]
+            
+    # Monroe constraint on the size of candidate's voter sets
+    for i in range(m):
+        problem += pulp.lpSum(x[i, j] for j in range(n)) >= np.floor(n/k) * y[i]
+        problem += pulp.lpSum(x[i, j] for j in range(n)) <= np.ceil(n/k) * y[i]
+
+    # Elect exactly k candidates
+    problem += pulp.lpSum(y[i] for i in range(m)) == k
+
+    problem.solve()
+    elected = np.array([i for i in range(m) if pulp.value(y[i]) == 1])
+    return elected
+
+
+def GreedyCC(profile,k):
+    """
+    Elect k candidates using a greedy approximation to the 
+    Chamberlain Courant rule. At every iteration, this rule 
+    selects a candidate to add to a growing winner set by finding 
+    the candidate which increases the assignment scores the most.
+    
+    Args:
+    profile (np.ndarray): (candidates x voters) Preference Profile. 
+    k (int): Number of candidates to elect
+    
+    Returns:
+    elected (np.ndarray): Winning candidates
+    """
+    m,n = profile.shape
+    B = borda_matrix(profile)
+            
+    is_elected = np.zeros(m, dtype = bool)
+    voter_assign_scores = np.zeros(n) - 1
+
+    for _ in range(k):
+        max_score = -1
+        max_cand = -1
+        for i in range(m):
+            if not is_elected[i]:
+                score_gain = np.sum(np.maximum(voter_assign_scores, B[i,:]))
+                if score_gain > max_score:
+                    max_score = score_gain
+                    max_cand = i
+                    
+        is_elected[max_cand] = True
+        votter_assign_scores = np.maximum(voter_assign_scores, B[max_cand,:])
+        
+    return np.where(is_elected)[0]
         
     
