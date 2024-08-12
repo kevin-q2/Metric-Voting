@@ -5,9 +5,7 @@ def election_sample(generator, elections_dict, gen_input, k):
     """
     Given a ballot generator for creating preference profiles
     from randomly generated metric settings and a dictionary containing a set of election methods
-    and optional key word arguments (see VoteKit: https://github.com/mggg/VoteKit), 
-    a number of voters, and a number of winning candidates. 
-    
+    and optional key word arguments, a number of voters, and a number of winning candidates. 
     Randomly creates a profile and then conducts elections with the given mechanisms 
     recording and outputting the results. 
 
@@ -43,17 +41,18 @@ def election_sample(generator, elections_dict, gen_input, k):
 
 
 
-def samples(s, generator, elections_dict, gen_input, k, filename = None, dim = 2):
+def samples(s, generator, elections_dict, gen_inputs, k, filename = None, dim = 2):
     """
     For a number of samples, s, sample elections from election_sample()
     and record the results. 
 
     Args:
         s (int): Number of samples. 
-        generator (Spatial): Object for creating random preference profiles.
+        generator (list[Spatial]): List of spatial objects for creating random preference profiles.
         elections_dict (dict[callable election, dict[str, Any]]): Election mechanism dictionary where keys are
             election mechanisms and their values are dictionaries with any additional key word arguments.
-        gen_input (int OR list[int]): Input to generator.generate() (different for Spatial vs GroupSpatial)
+        gen_input (list[int] OR list[list[int]]): List of inputs to generator.generate() 
+            (different ways of doing this for Spatial vs GroupSpatial)
         k (int): Number of candidates to elect.
         filename (str, optional): Filename to save results to, optional but if None results
             will not be saved. 
@@ -71,33 +70,40 @@ def samples(s, generator, elections_dict, gen_input, k, filename = None, dim = 2
             winners indices as values. Querying candidate_positions[winners['STV'],:] for example gives
             the winning candidates positions in the metric space. 
     """
-    m = generator.m
-    n = np.sum(gen_input)
-    result_dict = {E.__name__:np.zeros((s, k, dim)) for E in elections_dict.keys()}
-    result_dict['voters'] = [np.zeros((s, n, dim))]*s
-    result_dict['candidates'] = [np.zeros((s, m, dim))]*s
-    result_dict['labels'] = [np.zeros(s, n)]*s
-    
-    for i in range(s):
-        V, C, W, vlabels = election_sample(generator, elections_dict, gen_input, k)
-        result_dict['voters'][i] = V
-        result_dict['candidates'][i] = C
-        result_dict['labels'][i] = vlabels
-        for name, idxs in W.items():
-            if len(idxs) == k:
-                Cx = C[idxs,:]
-            elif len(idxs) <= k:
-                diff = k - len(idxs)
-                empties = np.array([[np.nan]*dim]*diff)
-                Cx = np.append(C[idxs,:], empties, axis = 0)
-            else:
-                raise ValueError('More than k candidates elected')
-            
+    results_list = []
+    for gidx, gen_input in enumerate(gen_inputs):
+        m = generator.m
+        n = np.sum(gen_input)
+        result_dict = {E.__name__:np.zeros((s, k, dim)) for E in elections_dict.keys()}
+        result_dict['voters'] = [np.zeros((s, n, dim))]*s
+        result_dict['candidates'] = [np.zeros((s, m, dim))]*s
+        result_dict['labels'] = [np.zeros(s, n)]*s
+        
+        for i in range(s):
+            V, C, W, vlabels = election_sample(generator, elections_dict, gen_input, k)
+            result_dict['voters'][i] = V
+            result_dict['candidates'][i] = C
+            result_dict['labels'][i] = vlabels
+            for name, idxs in W.items():
+                if len(idxs) == k:
+                    Cx = C[idxs,:]
+                elif len(idxs) <= k:
+                    diff = k - len(idxs)
+                    empties = np.array([[np.nan]*dim]*diff)
+                    Cx = np.append(C[idxs,:], empties, axis = 0)
+                else:
+                    raise ValueError('More than k candidates elected')
                 
-            result_dict[name][i] = Cx
-            
-    if not filename is None:
-        np.savez(filename, **result_dict)
+                    
+                result_dict[name][i] = Cx
+                
+        if not filename is None:
+            if len(gen_inputs) > 1:
+                np.savez(filename[:-4] + str(gidx) + filename[-4:] , **result_dict)
+            else:
+                np.savez(filename, **result_dict)
 
-    return result_dict
+        results_list.append(result_dict)
+        
+    return results_list
     

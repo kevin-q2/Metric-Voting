@@ -51,8 +51,6 @@ def remove_candidates(profile, candidates):
     return new_profile
 
 
-
-
 def cost(voter_positions, candidate_positions, distance = euclidean_distance):
     cost_sum = 0
     for v in voter_positions:
@@ -61,28 +59,52 @@ def cost(voter_positions, candidate_positions, distance = euclidean_distance):
     return cost_sum
 
 
-def best_group_cost(voter_positions, candidate_positions, size):
+def costs(voter_positions, candidate_positions):
     diffs = voter_positions[np.newaxis, :, :] - candidate_positions[:, np.newaxis, :]
     distances = np.sqrt(np.sum(diffs ** 2, axis=-1))
-    costs = np.sum(distances, axis=1)
-        
-    top_cands = np.argsort(costs)[:size]
-    return cost(voter_positions, candidate_positions[top_cands,:])
+    cost_array = np.sum(distances, axis=1)
+    return cost_array
 
 
-def representativeness(voter_positions, candidate_positions, groups, winners):
+def best_group_cost(voter_positions, candidate_positions, size):
+    cost_array = costs(voter_positions, candidate_positions)
+    best_cands = np.argsort(cost_array)[:size]
+    return np.sum(cost_array[best_cands])
+
+
+def worst_group_cost(voter_positions, candidate_positions, size, k):
+    cost_array = costs(voter_positions, candidate_positions)
+    worst_cands = np.argsort(cost_array)[::-1][k-size:k]
+    return np.sum(cost_array[worst_cands])
+
+
+def representativeness(voter_positions, candidate_positions, voter_labels, winners, sizes = None):
     n_voters = len(voter_positions)
+    groups = [[j for j in range(len(voter_labels)) if voter_labels[j] == i] 
+              for i in np.unique(voter_labels)]
     k = len(winners)
     max_epsilon = 0
 
     for g in groups:
         G = voter_positions[g,:]
-        Rsize = int(len(g)/n_voters * k)
+        if sizes is None:
+            Rsize = int(len(g)/n_voters * k)
+        else:
+            Rsize = sizes
         
         if Rsize != 0:
             cost1 = best_group_cost(G, winners, Rsize)
             cost2 = best_group_cost(G, candidate_positions, Rsize)
-            eps = np.abs(cost1 - cost2)/Rsize
+            cost3 = worst_group_cost(G, candidate_positions, Rsize, k)
+
+            #eps = np.abs(cost1 - cost2)/Rsize
+            numerator = np.abs(cost1 - cost2)
+            denominator = np.abs(cost3 - cost2)
+
+            if np.isclose(numerator, 0, atol = 1e-8) and np.isclose(denominator, 0, atol = 1e-8):
+                eps = 0
+            else:
+                eps = np.abs(cost1 - cost2)/np.abs(cost3 - cost2)
 
             if eps > max_epsilon:
                 max_epsilon = eps
@@ -90,18 +112,27 @@ def representativeness(voter_positions, candidate_positions, groups, winners):
     return max_epsilon
 
 
-def remove_candidates(profile, candidates):
-    # Convert candidates to a set for faster lookup
-    candidates_set = set(candidates)
-    
-    # Determine the size of the new profile
-    remaining_candidates = profile.shape[0] - len(candidates)
-    new_profile = np.zeros((remaining_candidates, profile.shape[1]), dtype=int)
-    
-    for col in range(profile.shape[1]):
-        # Filter out candidates that are in the candidates_set
-        new_rank = [i for i in profile[:,col] if i not in candidates_set]
-        # Assign the new rank to the corresponding column in the new profile
-        new_profile[:,col] = new_rank
-    
-    return new_profile
+def representativeness_ratio(voter_positions, candidate_positions, voter_labels, winners, sizes = None):
+    n_voters = len(voter_positions)
+    groups = [[j for j in range(len(voter_labels)) if voter_labels[j] == i] 
+              for i in np.unique(voter_labels)]
+    k = len(winners)
+    max_epsilon = 0
+
+    for g in groups:
+        G = voter_positions[g,:]
+        if sizes is None:
+            Rsize = int(len(g)/n_voters * k)
+        else:
+            Rsize = sizes
+        
+        if Rsize != 0:
+            cost1 = best_group_cost(G, winners, Rsize)
+            cost2 = best_group_cost(G, candidate_positions, Rsize)
+            #cost3 = worst_group_cost(G, candidate_positions, Rsize, k)
+            eps = cost1/cost2
+
+            if eps > max_epsilon:
+                max_epsilon = eps
+
+    return max_epsilon

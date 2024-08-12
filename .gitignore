@@ -165,3 +165,5 @@ cython_debug/
 # Files
 code/votekit_election_sampling.py
 data/
+*.sh
+*.txt

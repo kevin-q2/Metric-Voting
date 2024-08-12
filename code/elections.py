@@ -196,6 +196,25 @@ def RandomDictator(profile,k, rho = 1):
     return elected
 
 
+def RandomDictator2(profile,k):
+    """
+    Elect k candidates with k iterations of Random Dictator.
+    At each iteration, randomly choose a voter and elect its first choice.
+    Remove that candidate from all preference profiles and repeat.
+    
+    Args:
+    profile (np.ndarray): (candidates x voters) Preference Profile. 
+    k (int): Number of candidates to elect
+    
+    Returns:
+    elected (np.ndarray): Winning candidates
+    """
+    m,n = profile.shape
+    dictator = np.random.choice(range(n))
+    elected = profile[:k, dictator]
+    return elected
+
+
 def PRD(profile,k, p = None, q = None, rho = 1):
     """
     Elect k candidates with k iterations of Proportional Random Dictator (PRD).
@@ -244,6 +263,7 @@ def PRD(profile,k, p = None, q = None, rho = 1):
         mask = (first_choice_votes == winner)
 
         # Adjusts voter probability for the next round
+        # (If we did random dictator)
         voter_probability[mask] *= 0.8
         voter_probability /= np.sum(voter_probability)
         
@@ -307,7 +327,7 @@ def PluralityVeto(profile, k):
     return elected
                 
     
-def ChamberlainCourant(profile,k):
+def ChamberlinCourant(profile,k):
     """
     Elect k candidates with the Chamberlain Courant Mechanism. 
     This function uses an integer linear program to compute an optimal 

@@ -255,7 +255,8 @@ class GroupSpatial:
             [self.candidate_dist(**self.candidate_params) for c in range(self.m)]
         )
         
-        voter_positions = [[self.voter_dists[i](**self.voter_params[i]) for v in range(G[i])] for i in range(self.g)]
+        voter_positions = [[self.voter_dists[i](**self.voter_params[i]) for v in range(G[i])] 
+                           for i in range(self.g) if G[i] != 0]
         voter_positions = np.vstack(voter_positions)
         
         voter_labels = [[i]*G[i] for i in range(self.g)]
