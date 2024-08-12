@@ -60,10 +60,20 @@ def cost(voter_positions, candidate_positions, distance = euclidean_distance):
 
 
 def costs(voter_positions, candidate_positions):
+    # cost to each candidate:
     diffs = voter_positions[np.newaxis, :, :] - candidate_positions[:, np.newaxis, :]
     distances = np.sqrt(np.sum(diffs ** 2, axis=-1))
     cost_array = np.sum(distances, axis=1)
     return cost_array
+
+
+def voter_costs(voter_positions, candidate_positions):
+    # cost to each voter of summed over every candidate:
+    diffs = voter_positions[np.newaxis, :, :] - candidate_positions[:, np.newaxis, :]
+    distances = np.sqrt(np.sum(diffs ** 2, axis=-1))
+    cost_array = np.sum(distances, axis=0)
+    return cost_array
+
 
 
 def best_group_cost(voter_positions, candidate_positions, size):
@@ -76,6 +86,31 @@ def worst_group_cost(voter_positions, candidate_positions, size, k):
     cost_array = costs(voter_positions, candidate_positions)
     worst_cands = np.argsort(cost_array)[::-1][k-size:k]
     return np.sum(cost_array[worst_cands])
+
+
+def group_representation(voter_positions, candidate_positions, voter_labels, winners, group_label, size = None):
+    n_voters = len(voter_positions)
+    k = len(winners)
+    group = [i for i in range(len(voter_labels)) if voter_labels[i] == group_label]
+    if size is None:
+        Rsize = int(len(group)/n_voters * k)
+    else:
+        Rsize = size
+    
+    if Rsize != 0:
+        G = voter_positions[group, :]
+        cost1 = best_group_cost(G, winners, Rsize)
+        cost2 = best_group_cost(G, candidate_positions, Rsize)
+        return cost1/cost2
+    else:
+        return 0
+    
+def max_group_representation(voter_positions, candidate_positions, voter_labels, winners, size = None):
+    group_labels = np.unique(voter_labels) 
+    alpha = 0
+    for g in group_labels:
+        g_alpha = group_representation(voter_positions, candidate_positions, voter_labels, winners, g, size)
+        
 
 
 def representativeness(voter_positions, candidate_positions, voter_labels, winners, sizes = None):
@@ -136,3 +171,4 @@ def representativeness_ratio(voter_positions, candidate_positions, voter_labels,
                 max_epsilon = eps
 
     return max_epsilon
+    
