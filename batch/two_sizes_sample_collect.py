@@ -13,11 +13,7 @@ pal = sns.color_palette("hls", 8)
 
 sys.path.append(os.path.join(os.getcwd(), 'metric_voting/code'))
 from spatial_generation import Spatial, GroupSpatial
-from elections import SNTV,STV,Borda,RandomDictator,PRD, PluralityVeto
-from tools import cost, best_group_cost, representativeness, remove_candidates
-from election_sampling import election_sample, samples
-from spatial_generation import Spatial, GroupSpatial
-from elections import SNTV,Bloc,STV,Borda,RandomDictator,PRD, PluralityVeto, ChamberlinCourant, Monroe, GreedyCC, RandomDictator2
+from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, PluralityVeto, SMRD, OMRD, DMRD
 from tools import cost, best_group_cost, worst_group_cost, representativeness, representativeness_ratio, remove_candidates, borda_matrix
 from election_sampling import election_sample, samples
 
@@ -56,15 +52,15 @@ two_party_generator = GroupSpatial(m = m, g = len(two_party_G),
 # Generate a profile from random candidate and voter positions
 profile, candidate_positions, voter_positions, voter_labels = two_party_generator.generate(two_party_G)
 
-group_sizes = [[i, 100 - i] for i in range(50, -1, -5)]
+group_sizes = [[100 - i, i] for i in range(0, 105, 5)]
 
 
 # Define elections
 elections_dict = {SNTV:{}, Bloc:{}, STV:{},
-                 Borda:{}, ChamberlinCourant:{}, GreedyCC:{}, Monroe:{},
-                  RandomDictator:{'rho': 0.5}, RandomDictator2:{}, PRD:{'rho': 0.5}, PluralityVeto:{}}
+                 Borda:{}, ChamberlinCourant:{}, GreedyCC:{}, Monroe:{}, PluralityVeto:{},
+                 SMRD:{}, OMRD:{}, DMRD:{'rho': 0.5}}
 elections_list = [SNTV, Bloc, STV, Borda, ChamberlinCourant, GreedyCC, Monroe, 
-                  RandomDictator,RandomDictator2, PRD, PluralityVeto]
+                  PluralityVeto, SMRD, OMRD, DMRD]
 n_samples = 1000
 
 # and sample from them

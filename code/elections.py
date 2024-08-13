@@ -202,7 +202,7 @@ def SMRD(profile,k):
 
 
 
-def RandomDictator2(profile,k):
+def OMRD(profile,k):
     """
     Chooses a single random dictator and lets them elect their top k 
     preferences.
@@ -221,7 +221,7 @@ def RandomDictator2(profile,k):
 
 
 
-def RandomDictator(profile,k, rho = 1):
+def DMRD(profile,k, rho = 1):
     """
     Elect k candidates with k iterations of Random Dictator.
     At each iteration, randomly choose a voter and elect its first choice.
@@ -411,7 +411,7 @@ def ChamberlinCourant(profile,k):
     # Elect exactly k candidates
     problem += pulp.lpSum(y[i] for i in range(m)) == k
 
-    problem.solve()
+    problem.solve(pulp.PULP_CBC_CMD(msg=False))
     elected = np.array([i for i in range(m) if pulp.value(y[i]) == 1])
     return elected
 
@@ -462,7 +462,7 @@ def Monroe(profile,k):
     # Elect exactly k candidates
     problem += pulp.lpSum(y[i] for i in range(m)) == k
 
-    problem.solve()
+    problem.solve(pulp.PULP_CBC_CMD(msg=False))
     elected = np.array([i for i in range(m) if pulp.value(y[i]) == 1])
     return elected
 
