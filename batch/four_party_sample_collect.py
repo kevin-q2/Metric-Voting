@@ -86,9 +86,13 @@ for i, ax in enumerate(axes.flat):
     ax.set_xlabel('')
     ax.set_ylabel('')
 
-vc = pal[5]
-cc = pal[4]
-wc = pal[7]
+#vc = pal[5]
+#cc = pal[4]
+#wc = pal[7]
+
+vc = tab20_colors[1]
+cc = tab20_colors[5]
+wc = tab20_colors[8]
 
 sample_idx = 5
 voter_example = result_dict['voters'][sample_idx]
