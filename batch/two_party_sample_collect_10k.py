@@ -13,10 +13,9 @@ from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, 
 from election_sampling import election_sample, samples
 
 
-
 # Choose number of voters n
 # And the number of candidates m
-n = 100
+n = 10000
 m = 20
 
 # And the number of winners for the election
@@ -25,7 +24,7 @@ k = 4
 # Means for each of the 2 Gaussian distributions
 means = [[0, -1.5], [0, 1.5]]
 stds = [0.5, 0.5]  # Standard deviations for each Gaussian
-two_party_G = [50,50]  # Group Sizes
+two_party_G = [5000,5000]  # Group Sizes
 
 voter_params = [{'loc': None, 'scale': None, 'size': 2} for _ in range(len(two_party_G))]
 for i,mean in enumerate(means):
@@ -47,21 +46,16 @@ two_party_generator = GroupSpatial(m = m, g = len(two_party_G),
 # Generate a profile from random candidate and voter positions
 profile, candidate_positions, voter_positions, voter_labels = two_party_generator.generate(two_party_G)
 
-group_sizes = [[100 - i, i] for i in range(0, 105, 5)]
-
 
 # Define elections
 elections_dict = {SNTV:{}, Bloc:{}, STV:{},
-                 Borda:{}, ChamberlinCourant:{}, GreedyCC:{}, Monroe:{}, PluralityVeto:{},
+                 Borda:{}, GreedyCC:{}, PluralityVeto:{},
                  SMRD:{}, OMRD:{}, DMRD:{'rho': 0.5}}
-elections_list = [SNTV, Bloc, STV, Borda, ChamberlinCourant, GreedyCC, Monroe, 
+elections_list = [SNTV, Bloc, STV, Borda, GreedyCC,
                   PluralityVeto, SMRD, OMRD, DMRD]
-n_samples = 1000
+n_samples = 10000
 
 # and sample from them
-f = 'metric_voting/data/2sizes.npz'
-result_dict = samples(n_samples, two_party_generator, elections_dict, group_sizes, k, dim = 2, filename = f)
-
-
-
-
+f = 'metric_voting/data/2party_10k.npz'
+results_list = samples(n_samples, two_party_generator, elections_dict, [two_party_G], k, dim = 2, filename = f)
+result_dict = results_list[0]
