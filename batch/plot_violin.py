@@ -42,9 +42,14 @@ n_samples = 10000
 pal = sns.color_palette("hls", 8)
 tab20_colors = plt.cm.tab20.colors
 
-#plt.rcParams['font.family'] = 'serif'        # Use a serif font
-#plt.rcParams['font.serif'] = ['Times New Roman']  # Specify the font family
-plt.rcParams['font.size'] = 16               # Set the default font size
+plt.rcParams.update({
+    "pgf.texsystem": "pdflatex",
+    "font.family": "serif",
+    "font.serif": [],
+    "text.usetex": True,
+    "pgf.rcfonts": False,
+    "font.size": 16
+})
 
 
 
@@ -90,6 +95,8 @@ represent_labels_overall = [name for name in avg_represent_overall.keys()]
 
 ylimit = max(max([np.max(r) for r in represent_data]), max([np.max(r) for r in represent_data_overall]))
 
+represent_labels = ['Chamberlin' if n == 'ChamberlinCourant' else n for n in represent_labels]
+represent_labels_overall = ['Chamberlin' if n == 'ChamberlinCourant' else n for n in represent_labels_overall]
 
 ######################################################################################################################
 # Plot first violin
@@ -100,8 +107,8 @@ for violin in ax.collections:
     
 ax.set_ylim(0.9, 2)
 # NOTE: Uncomment if you want to see the labels!
-#plt.xticks(ticks=np.arange(len(elections_list)), labels=represent_labels, rotation=67)
-#plt.ylabel(r'$\alpha$')
+plt.xticks(ticks=np.arange(len(elections_list)), labels=represent_labels, rotation=67)
+plt.ylabel(r'$\alpha$')
 plt.savefig(output_file1, bbox_inches='tight')
 
 ########################################################################################################################
@@ -116,8 +123,8 @@ for violin in ax.collections:
     
 ax.set_ylim(0.9, 2)
 # NOTE: Uncomment if you want to see the labels!
-#plt.xticks(ticks=np.arange(len(elections_list)), labels=represent_labels1, rotation=67)
-#plt.ylabel(r'$\alpha$')
+plt.xticks(ticks=np.arange(len(elections_list)), labels=represent_labels_overall, rotation=67)
+plt.ylabel(r'$\alpha$')
 plt.savefig(output_file2, bbox_inches='tight')
 
 

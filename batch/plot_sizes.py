@@ -42,9 +42,14 @@ n_samples = 1000
 pal = sns.color_palette("hls", 8)
 tab20_colors = plt.cm.tab20.colors
 
-#plt.rcParams['font.family'] = 'serif'        # Use a serif font
-#plt.rcParams['font.serif'] = ['Times New Roman']  # Specify the font family
-plt.rcParams['font.size'] = 16               # Set the default font size
+plt.rcParams.update({
+    "pgf.texsystem": "pdflatex",
+    "font.family": "serif",
+    "font.serif": [],
+    "text.usetex": True,
+    "pgf.rcfonts": False,
+    "font.size": 16
+})
 
 ####################################################################################################################################
 # Compute results
@@ -97,9 +102,9 @@ for i, (ename,evals) in enumerate(size_avg_represent.items()):
     ax.plot(Asizes, evals[0], label=ename, color = tab20_colors[i], linewidth = 3, marker = 'o')
     #ax.fill_between(Asizes, evals[0] - evals[1], evals[0] + evals[1], color=tab20_colors[i], alpha=0.05)
 
-#plt.ylabel(r'$\alpha$')
-#plt.xlabel('Bloc size')
-plt.legend(fontsize = 10, loc = 'upper left')
+plt.ylabel(r'$\alpha$')
+plt.xlabel('Bloc size')
+plt.legend(fontsize = 12, loc = 'upper left')
 plt.savefig(output_file1, bbox_inches='tight')
 plt.show()
 
@@ -113,8 +118,8 @@ for i, (ename,evals) in enumerate(size_avg_represent1.items()):
     ax.plot(Asizes, evals[0], label=ename, color = tab20_colors[i], linewidth = 3, marker = 'o')
     #ax.fill_between(Asizes, evals[0] - evals[1], evals[0] + evals[1], color=tab20_colors[i], alpha=0.05)
 
-#plt.ylabel(r'$\alpha$')
-#plt.xlabel('Bloc size')
-plt.legend(fontsize = 10, loc = 'upper left')
+plt.ylabel(r'$\alpha$')
+plt.xlabel('Bloc size')
+plt.legend(fontsize = 12, loc = 'upper left')
 plt.savefig(output_file2, bbox_inches='tight')
 plt.show()

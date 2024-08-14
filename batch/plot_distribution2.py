@@ -11,10 +11,10 @@ from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, 
 from tools import group_representation, max_group_representation
 
 # Specify results to plot from:
-input_file = 'metric_voting/data/4party.npz'
+input_file = 'metric_voting/data/2party.npz'
 
 # And where to save them!
-output_file = 'metric_voting/figures/4party.png'
+output_file = 'metric_voting/figures/2party.png'
 
 
 # Read data
