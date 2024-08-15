@@ -20,11 +20,11 @@ from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, 
 from tools import group_representation, max_group_representation
 
 # Specify results to plot from:
-input_file = 'metric_voting/data/2party1.npz'
+input_file = 'metric_voting/data/2bloc.npz'
 
 # And where to save them!
-output_file1 = 'metric_voting/figures/2party1_representation.png'
-output_file2 = 'metric_voting/figures/2party1_representation_overall.png'
+output_file1 = 'metric_voting/figures/2bloc_representation.png'
+output_file2 = 'metric_voting/figures/2bloc_representation_overall.png'
 
 
 # Read data
@@ -48,7 +48,7 @@ plt.rcParams.update({
     "font.serif": [],
     "text.usetex": True,
     "pgf.rcfonts": False,
-    "font.size": 22
+    "font.size": 24
 })
 
 
@@ -108,7 +108,7 @@ flierprops = dict(marker='o', markerfacecolor='none', markersize=2, linestyle='n
 ax = sns.boxplot(data=represent_data, palette = tab20_colors, width = 0.6, linewidth=2.5, fliersize= 1, flierprops=flierprops)
 ax.set_ylim(0.9, 2)
 plt.xticks(ticks=np.arange(len(elections_list)), labels=represent_labels, rotation=67, ha='right')
-plt.ylabel(r'$\alpha$')
+plt.ylabel(r'$\alpha$-group-efficiency')
 plt.savefig(output_file1, bbox_inches='tight')
 
 ########################################################################################################################
@@ -119,7 +119,7 @@ flierprops = dict(marker='o', markerfacecolor='none', markersize=2, linestyle='n
 ax = sns.boxplot(data=represent_data_overall, palette = tab20_colors, width = 0.6, linewidth=2.5, fliersize= 1, flierprops=flierprops)
 ax.set_ylim(0.9, 2)
 plt.xticks(ticks=np.arange(len(elections_list)), labels=represent_labels_overall, rotation=67, ha='right')
-plt.ylabel(r'$\alpha$')
+plt.ylabel(r'$\alpha$-overall-efficiency')
 plt.savefig(output_file2, bbox_inches='tight')
 
 

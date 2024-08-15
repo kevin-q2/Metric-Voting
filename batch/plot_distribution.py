@@ -11,10 +11,10 @@ from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, 
 from tools import group_representation, max_group_representation
 
 # Specify results to plot from:
-input_file = 'metric_voting/data/4party1.npz'
+input_file = 'metric_voting/data/4party1_5cand.npz'
 
 # And where to save them!
-output_file = 'metric_voting/figures/4party1.png'
+output_file = 'metric_voting/figures/4bloc_5cand.png'
 
 
 # Read data
@@ -57,7 +57,8 @@ for i, ax in enumerate(axes.flat):
 #wc = pal[7]
 
 vc = tab20_colors[1]
-cc = tab20_colors[3]
+cc = tab20_colors[15]
+cc2 = tab20_colors[14]
 wc = tab20_colors[8]
 
 # Index for the sample used for the example plots:
@@ -89,7 +90,7 @@ example_ylim = [min(np.min(voter_example[:,1]), np.min(candidate_example[:,1])) 
 sns.kdeplot(data=voter_stack_sample, x='x', y='y', color = vc, fill=False,
             thresh=0.1, levels=10, alpha = 1, ax = axes[0][0])
 sns.kdeplot(data=candidate_stack_sample, x='x', y='y', color = cc, fill=False,
-            thresh=0.1, levels=10, alpha = 0.7, ax = axes[0][0])
+            thresh=0.1, levels=10, alpha = 0.9, ax = axes[0][0])
 axes[0][0].set_title('KDE')
 axes[0][0].set_title('KDE')
 axes[0][0].set_ylabel('')
@@ -97,7 +98,7 @@ axes[0][0].set_xlabel('')
 
 
 axes[0][1].scatter(voter_stack.iloc[:,0], voter_stack.iloc[:,1],
-                   facecolors = vc, edgecolors = 'none', alpha = 0.3, s = 10)
+                   facecolors = vc, edgecolors = 'none', alpha = 1, s = 10)
 axes[0][1].scatter(candidate_stack.iloc[:,0], candidate_stack.iloc[:,1],
                    facecolors = cc, edgecolors = 'none', alpha = 0.01, s = 10)
 axes[0][1].set_xlim(scatter_xlim)
@@ -109,7 +110,7 @@ axes[0][1].set_title('Scatter')
 axes[0][2].scatter(voter_example[:,0], voter_example[:,1],
                    facecolors = vc, edgecolors = 'none', alpha = 0.9, s = 30)
 axes[0][2].scatter(candidate_example[:,0], candidate_example[:,1],
-                   facecolors = cc, edgecolors = 'none', alpha = 0.9, s = 30)
+                   facecolors = cc2, edgecolors = 'none', alpha = 0.5, s = 30)
 axes[0][2].set_xlim(example_xlim)
 axes[0][2].set_ylim(example_ylim)
 axes[0][2].set_title('Example')

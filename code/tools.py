@@ -113,62 +113,8 @@ def max_group_representation(voter_positions, candidate_positions, voter_labels,
         
 
 
-def representativeness(voter_positions, candidate_positions, voter_labels, winners, sizes = None):
-    n_voters = len(voter_positions)
-    groups = [[j for j in range(len(voter_labels)) if voter_labels[j] == i] 
-              for i in np.unique(voter_labels)]
-    k = len(winners)
-    max_epsilon = 0
-
-    for g in groups:
-        G = voter_positions[g,:]
-        if sizes is None:
-            Rsize = int(len(g)/n_voters * k)
-        else:
-            Rsize = sizes
-        
-        if Rsize != 0:
-            cost1 = best_group_cost(G, winners, Rsize)
-            cost2 = best_group_cost(G, candidate_positions, Rsize)
-            cost3 = worst_group_cost(G, candidate_positions, Rsize, k)
-
-            #eps = np.abs(cost1 - cost2)/Rsize
-            numerator = np.abs(cost1 - cost2)
-            denominator = np.abs(cost3 - cost2)
-
-            if np.isclose(numerator, 0, atol = 1e-8) and np.isclose(denominator, 0, atol = 1e-8):
-                eps = 0
-            else:
-                eps = np.abs(cost1 - cost2)/np.abs(cost3 - cost2)
-
-            if eps > max_epsilon:
-                max_epsilon = eps
-
-    return max_epsilon
-
-
-def representativeness_ratio(voter_positions, candidate_positions, voter_labels, winners, sizes = None):
-    n_voters = len(voter_positions)
-    groups = [[j for j in range(len(voter_labels)) if voter_labels[j] == i] 
-              for i in np.unique(voter_labels)]
-    k = len(winners)
-    max_epsilon = 0
-
-    for g in groups:
-        G = voter_positions[g,:]
-        if sizes is None:
-            Rsize = int(len(g)/n_voters * k)
-        else:
-            Rsize = sizes
-        
-        if Rsize != 0:
-            cost1 = best_group_cost(G, winners, Rsize)
-            cost2 = best_group_cost(G, candidate_positions, Rsize)
-            #cost3 = worst_group_cost(G, candidate_positions, Rsize, k)
-            eps = cost1/cost2
-
-            if eps > max_epsilon:
-                max_epsilon = eps
-
-    return max_epsilon
-    
+def qmin_cost(voter_positions, winners, q):
+    diffs = voter_positions[np.newaxis, :, :] - winners[:, np.newaxis, :]
+    distances = np.sqrt(np.sum(diffs ** 2, axis=-1))
+    distance_sort = np.sort(distances, axis = 0)
+    return np.sum(distance_sort[q,:])
