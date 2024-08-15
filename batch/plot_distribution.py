@@ -7,14 +7,14 @@ from matplotlib.lines import Line2D
 import seaborn as sns
 
 sys.path.append(os.path.join(os.getcwd(), 'metric_voting/code'))
-from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, PluralityVeto, SMRD, OMRD, DMRD
+from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, PluralityVeto, SMRD, OMRD, DMRD,ExpandingApprovals
 from tools import group_representation, max_group_representation
 
 # Specify results to plot from:
-input_file = 'metric_voting/data/4party.npz'
+input_file = 'metric_voting/data/4party1.npz'
 
 # And where to save them!
-output_file = 'metric_voting/figures/4party.png'
+output_file = 'metric_voting/figures/4party1.png'
 
 
 # Read data
@@ -23,7 +23,7 @@ result_dict = {key: loaded_data[key] for key in loaded_data.files}
 
 
 # Specify elections used
-elections_list = [SNTV, Bloc, STV, Borda, ChamberlinCourant, GreedyCC, Monroe, PluralityVeto, SMRD, OMRD, DMRD]
+elections_list = [SNTV, Bloc, STV, Borda, ChamberlinCourant, GreedyCC, Monroe, PluralityVeto, ExpandingApprovals, SMRD, OMRD, DMRD]
 
 
 # Specify global parameters for matplotlib
@@ -36,7 +36,7 @@ plt.rcParams.update({
     "font.serif": [],
     "text.usetex": True,
     "pgf.rcfonts": False,
-    "font.size": 16
+    "font.size": 18
 })
 
 
@@ -57,7 +57,7 @@ for i, ax in enumerate(axes.flat):
 #wc = pal[7]
 
 vc = tab20_colors[1]
-cc = tab20_colors[5]
+cc = tab20_colors[3]
 wc = tab20_colors[8]
 
 # Index for the sample used for the example plots:
@@ -91,6 +91,7 @@ sns.kdeplot(data=voter_stack_sample, x='x', y='y', color = vc, fill=False,
 sns.kdeplot(data=candidate_stack_sample, x='x', y='y', color = cc, fill=False,
             thresh=0.1, levels=10, alpha = 0.7, ax = axes[0][0])
 axes[0][0].set_title('KDE')
+axes[0][0].set_title('KDE')
 axes[0][0].set_ylabel('')
 axes[0][0].set_xlabel('')
 
@@ -102,6 +103,7 @@ axes[0][1].scatter(candidate_stack.iloc[:,0], candidate_stack.iloc[:,1],
 axes[0][1].set_xlim(scatter_xlim)
 axes[0][1].set_ylim(scatter_ylim)
 axes[0][1].set_title('Scatter')
+axes[0][1].set_title('Scatter')
 
 
 axes[0][2].scatter(voter_example[:,0], voter_example[:,1],
@@ -111,6 +113,7 @@ axes[0][2].scatter(candidate_example[:,0], candidate_example[:,1],
 axes[0][2].set_xlim(example_xlim)
 axes[0][2].set_ylim(example_ylim)
 axes[0][2].set_title('Example')
+axes[0][2].set_title('Example')
 
 
 for i,E in enumerate(elections_list):
@@ -118,6 +121,8 @@ for i,E in enumerate(elections_list):
     name_label = name
     if name == 'ChamberlinCourant':
         name_label = 'Chamberlin'
+    elif name == 'ExpandingApprovals':
+        name_label = 'Expanding'
         
     ax_idx = i + 1
 
@@ -130,6 +135,7 @@ for i,E in enumerate(elections_list):
                 thresh=0.1, levels=10, alpha = 1, ax = axes[ax_idx][0])
     sns.kdeplot(data=winner_stack_sample, x='x', y='y', color = wc, fill=False,
                 thresh=0.1, levels=10, alpha = 0.7, ax = axes[ax_idx][0])
+    axes[ax_idx][0].set_ylabel(name_label)
     axes[ax_idx][0].set_ylabel(name_label)
     axes[ax_idx][0].set_xlabel('')
     

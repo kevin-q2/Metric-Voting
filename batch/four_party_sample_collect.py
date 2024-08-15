@@ -9,7 +9,7 @@ import time
 
 sys.path.append(os.path.join(os.getcwd(), 'metric_voting/code'))
 from spatial_generation import Spatial, GroupSpatial
-from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, PluralityVeto, SMRD, OMRD, DMRD
+from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, PluralityVeto, SMRD, OMRD, DMRD, ExpandingApprovals
 from election_sampling import election_sample, samples
 
 
@@ -19,7 +19,7 @@ n = 100
 m = 20
 
 # And the number of winners for the election
-k = 4
+k = 5
 
 # Means for each of the 4 Gaussian distributions
 means = [[-2, 0], [2, 0], [0, 2], [0, -2]]
@@ -33,7 +33,7 @@ for i,mean in enumerate(means):
 for i,std in enumerate(stds):
     voter_params[i]['scale'] = std
     
-candidate_params = {'low': -3, 'high': 3, 'size': 2}
+candidate_params = {'low': -5, 'high': 5, 'size': 2}
 
 distance = lambda point1, point2: np.linalg.norm(point1 - point2)
 
@@ -43,19 +43,18 @@ four_party_generator = GroupSpatial(m = m, g = len(four_party_G),
                     distance = distance)
 
 
-# Generate a profile from random candidate and voter positions
-profile, candidate_positions, voter_positions, voter_labels = four_party_generator.generate(four_party_G)
-
-
 # Define elections
 elections_dict = {SNTV:{}, Bloc:{}, STV:{},
                  Borda:{}, ChamberlinCourant:{}, GreedyCC:{}, Monroe:{}, PluralityVeto:{},
-                 SMRD:{}, OMRD:{}, DMRD:{'rho': 0.5}}
-elections_list = [SNTV, Bloc, STV, Borda, ChamberlinCourant, GreedyCC, Monroe, 
-                  PluralityVeto, SMRD, OMRD, DMRD]
+                 ExpandingApprovals: {}, SMRD:{}, OMRD:{}, DMRD:{'rho': 0.5}}
+
+# Number of samples to use
 n_samples = 10000
 
+# set the seed for deterministic results:
+np.random.seed(918717)
+
 # and sample from them
-f = 'metric_voting/data/4party.npz'
+f = 'metric_voting/data/4party1_5cand.npz'
 results_list = samples(n_samples, four_party_generator, elections_dict, [four_party_G], k, dim = 2, filename = f)
 result_dict = results_list[0]

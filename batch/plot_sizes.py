@@ -16,7 +16,7 @@ from matplotlib.lines import Line2D
 import seaborn as sns
 
 sys.path.append(os.path.join(os.getcwd(), 'metric_voting/code'))
-from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, PluralityVeto, SMRD, OMRD, DMRD
+from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, PluralityVeto, SMRD, OMRD, DMRD, ExpandingApprovals
 from tools import group_representation, max_group_representation
 
 
@@ -34,7 +34,7 @@ result_dict = {key: loaded_data[key] for key in loaded_data.files}
 
 
 # Specify elections used (and number of samples for each)
-elections_list = [SNTV, Bloc, STV, Borda, ChamberlinCourant, GreedyCC, Monroe, PluralityVeto, SMRD, OMRD, DMRD]
+elections_list = [SNTV, Bloc, STV, Borda, ChamberlinCourant, GreedyCC, Monroe, PluralityVeto, ExpandingApprovals, SMRD, OMRD, DMRD]
 n_samples = 1000
 
 
@@ -48,7 +48,7 @@ plt.rcParams.update({
     "font.serif": [],
     "text.usetex": True,
     "pgf.rcfonts": False,
-    "font.size": 16
+    "font.size": 20
 })
 
 ####################################################################################################################################
@@ -105,6 +105,9 @@ for i, (ename,evals) in enumerate(size_avg_represent.items()):
 plt.ylabel(r'$\alpha$')
 plt.xlabel('Bloc size')
 plt.legend(fontsize = 12, loc = 'upper left')
+plt.ylabel(r'$\alpha$')
+plt.xlabel('Bloc size')
+plt.legend(fontsize = 12, loc = 'upper left')
 plt.savefig(output_file1, bbox_inches='tight')
 plt.show()
 
@@ -118,6 +121,9 @@ for i, (ename,evals) in enumerate(size_avg_represent1.items()):
     ax.plot(Asizes, evals[0], label=ename, color = tab20_colors[i], linewidth = 3, marker = 'o')
     #ax.fill_between(Asizes, evals[0] - evals[1], evals[0] + evals[1], color=tab20_colors[i], alpha=0.05)
 
+plt.ylabel(r'$\alpha$')
+plt.xlabel('Bloc size')
+plt.legend(fontsize = 12, loc = 'upper left')
 plt.ylabel(r'$\alpha$')
 plt.xlabel('Bloc size')
 plt.legend(fontsize = 12, loc = 'upper left')

@@ -501,5 +501,48 @@ def GreedyCC(profile,k):
         voter_assign_scores = np.maximum(voter_assign_scores, B[max_cand,:])
         
     return np.where(is_elected)[0]
+
+
+
+def ExpandingApprovals(profile, k):
+    """
+    Elect k candidates using the expanding approvals rule seen in:
+    (Proportional Representation in Metric Spaces and Low-Distortion Committee Selection 
+    Kalayci, Kempe, Kher 2024). Please refer to their paper for a full description. 
+    
+    Args:
+    profile (np.ndarray): (candidates x voters) Preference Profile. 
+    k (int): Number of candidates to elect
+    
+    Returns:
+    elected (np.ndarray): Winning candidates
+    """
+    m,n = profile.shape
+    droop = np.ceil(n/k)
+    U_mask = np.ones(n, dtype = bool)
+    R_mask = np.zeros(m, dtype = bool)
+    N = np.zeros(profile.shape)
+    random_order = np.random.permutation(n)
+    
+    for t in range(m):
+        for v in random_order:
+            if U_mask[v]:
+                c = profile[t, v]
+                if not R_mask[c]:
+                    N[c,v] = 1
+                    if np.sum(N[c,:]) >= droop:
+                        R_mask[c] = True
+                        c_voters = np.where(N[c,:])[0]
+                        N[:, c_voters] = 0
+                        U_mask[c_voters] = False
+                        
+    if np.sum(R_mask) < k:
+        remaining = k - np.sum(R_mask)
+        non_elected = np.where(R_mask == False)[0]
+        new_elects = np.random.choice(non_elected, remaining, replace = False)
+        R_mask[new_elects] = True
+        
+    elected = np.where(R_mask)[0]
+    return elected
         
     

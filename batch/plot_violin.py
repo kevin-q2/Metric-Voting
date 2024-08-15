@@ -16,15 +16,15 @@ from matplotlib.lines import Line2D
 import seaborn as sns
 
 sys.path.append(os.path.join(os.getcwd(), 'metric_voting/code'))
-from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, PluralityVeto, SMRD, OMRD, DMRD
+from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, PluralityVeto, SMRD, OMRD, DMRD, ExpandingApprovals
 from tools import group_representation, max_group_representation
 
 # Specify results to plot from:
-input_file = 'metric_voting/data/2party_10k.npz'
+input_file = 'metric_voting/data/2party1.npz'
 
 # And where to save them!
-output_file1 = 'metric_voting/figures/2party_representation_10k.png'
-output_file2 = 'metric_voting/figures/2party_representation_10k_overall.png'
+output_file1 = 'metric_voting/figures/2party1_representation.png'
+output_file2 = 'metric_voting/figures/2party1_representation_overall.png'
 
 
 # Read data
@@ -33,8 +33,8 @@ result_dict = {key: loaded_data[key] for key in loaded_data.files}
 
 
 # Specify elections used (and number of samples for each)
-#elections_list = [SNTV, Bloc, STV, Borda, ChamberlinCourant, GreedyCC, Monroe, PluralityVeto, SMRD, OMRD, DMRD]
-elections_list = [SNTV, Bloc, STV, Borda, GreedyCC, PluralityVeto, SMRD, OMRD, DMRD]
+elections_list = [SNTV, Bloc, STV, Borda, ChamberlinCourant, GreedyCC, Monroe, PluralityVeto, ExpandingApprovals, SMRD, OMRD, DMRD]
+#elections_list = [SNTV, Bloc, STV, Borda, GreedyCC, PluralityVeto, ExpandingApprovals, SMRD, OMRD, DMRD]
 n_samples = 10000
 
 
@@ -48,7 +48,7 @@ plt.rcParams.update({
     "font.serif": [],
     "text.usetex": True,
     "pgf.rcfonts": False,
-    "font.size": 16
+    "font.size": 22
 })
 
 
@@ -96,34 +96,29 @@ represent_labels_overall = [name for name in avg_represent_overall.keys()]
 ylimit = max(max([np.max(r) for r in represent_data]), max([np.max(r) for r in represent_data_overall]))
 
 represent_labels = ['Chamberlin' if n == 'ChamberlinCourant' else n for n in represent_labels]
+represent_labels = ['Expanding' if n == 'ExpandingApprovals' else n for n in represent_labels]
 represent_labels_overall = ['Chamberlin' if n == 'ChamberlinCourant' else n for n in represent_labels_overall]
+represent_labels_overall = ['Expanding' if n == 'ExpandingApprovals' else n for n in represent_labels_overall]
 
 ######################################################################################################################
-# Plot first violin
+# Plot first box
 plt.figure(figsize=(16, 6), dpi = 200)
-ax = sns.violinplot(data=represent_data, palette = tab20_colors, alpha = 1, width = 0.9)
-for violin in ax.collections:
-    violin.set_alpha(1)
-    
+flierprops = dict(marker='o', markerfacecolor='none', markersize=2, linestyle='none', markeredgecolor='black', alpha = 0.5)
+
+ax = sns.boxplot(data=represent_data, palette = tab20_colors, width = 0.6, linewidth=2.5, fliersize= 1, flierprops=flierprops)
 ax.set_ylim(0.9, 2)
-# NOTE: Uncomment if you want to see the labels!
-plt.xticks(ticks=np.arange(len(elections_list)), labels=represent_labels, rotation=67)
+plt.xticks(ticks=np.arange(len(elections_list)), labels=represent_labels, rotation=67, ha='right')
 plt.ylabel(r'$\alpha$')
 plt.savefig(output_file1, bbox_inches='tight')
 
 ########################################################################################################################
 # Plot second violin
-
-plt.rcParams.update({'font.size': 18})
-# Create a violin plot
 plt.figure(figsize=(16, 6), dpi = 200)
-ax = sns.violinplot(data=represent_data_overall, palette = tab20_colors, alpha = 1, width = 0.9)
-for violin in ax.collections:
-    violin.set_alpha(1)
-    
+flierprops = dict(marker='o', markerfacecolor='none', markersize=2, linestyle='none', markeredgecolor='black', alpha = 0.5)
+
+ax = sns.boxplot(data=represent_data_overall, palette = tab20_colors, width = 0.6, linewidth=2.5, fliersize= 1, flierprops=flierprops)
 ax.set_ylim(0.9, 2)
-# NOTE: Uncomment if you want to see the labels!
-plt.xticks(ticks=np.arange(len(elections_list)), labels=represent_labels_overall, rotation=67)
+plt.xticks(ticks=np.arange(len(elections_list)), labels=represent_labels_overall, rotation=67, ha='right')
 plt.ylabel(r'$\alpha$')
 plt.savefig(output_file2, bbox_inches='tight')
 

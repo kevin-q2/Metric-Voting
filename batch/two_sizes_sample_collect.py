@@ -9,7 +9,7 @@ import time
 
 sys.path.append(os.path.join(os.getcwd(), 'metric_voting/code'))
 from spatial_generation import Spatial, GroupSpatial
-from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, PluralityVeto, SMRD, OMRD, DMRD
+from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, PluralityVeto, SMRD, OMRD, DMRD, ExpandingApprovals
 from election_sampling import election_sample, samples
 
 
@@ -23,7 +23,7 @@ m = 20
 k = 4 
 
 # Means for each of the 2 Gaussian distributions
-means = [[0, -1.5], [0, 1.5]]
+means = [[0, -2], [0, 2]]
 stds = [0.5, 0.5]  # Standard deviations for each Gaussian
 two_party_G = [50,50]  # Group Sizes
 
@@ -34,7 +34,7 @@ for i,mean in enumerate(means):
 for i,std in enumerate(stds):
     voter_params[i]['scale'] = std
     
-candidate_params = {'low': -3, 'high': 3, 'size': 2}
+candidate_params = {'low': -5, 'high': 5, 'size': 2}
 
 distance = lambda point1, point2: np.linalg.norm(point1 - point2)
 
@@ -53,10 +53,13 @@ group_sizes = [[100 - i, i] for i in range(0, 105, 5)]
 # Define elections
 elections_dict = {SNTV:{}, Bloc:{}, STV:{},
                  Borda:{}, ChamberlinCourant:{}, GreedyCC:{}, Monroe:{}, PluralityVeto:{},
-                 SMRD:{}, OMRD:{}, DMRD:{'rho': 0.5}}
-elections_list = [SNTV, Bloc, STV, Borda, ChamberlinCourant, GreedyCC, Monroe, 
-                  PluralityVeto, SMRD, OMRD, DMRD]
+                 SMRD:{}, OMRD:{}, DMRD:{'rho': 0.5}, ExpandingApprovals: {}}
+
+# Number of samples for each
 n_samples = 1000
+
+# set the seed for deterministic results:
+np.random.seed(918717)
 
 # and sample from them
 f = 'metric_voting/data/2sizes.npz'

@@ -2,10 +2,6 @@ import sys
 import os
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-import random
-import seaborn as sns
 import itertools as it
 import pulp
 from sklearn.cluster import KMeans
@@ -13,14 +9,8 @@ import time
 
 sys.path.append(os.path.join(os.getcwd(), 'metric_voting/code'))
 from spatial_generation import Spatial, GroupSpatial
-from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, PluralityVeto, SMRD, OMRD, DMRD
-from tools import cost, best_group_cost, worst_group_cost, representativeness, representativeness_ratio, remove_candidates, borda_matrix, group_representation, max_group_representation
+from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, PluralityVeto, SMRD, OMRD, DMRD, ExpandingApprovals
 from election_sampling import election_sample, samples
-
-
-# Colors!
-pal = sns.color_palette("hls", 8)
-tab20_colors = plt.cm.tab20.colors
 
 
 # Choose number of voters n
@@ -43,7 +33,7 @@ for i,mean in enumerate(means):
 for i,std in enumerate(stds):
     voter_params[i]['scale'] = std
     
-candidate_params = {'low': -3, 'high': 3, 'size': 2}
+candidate_params = {'low': -5, 'high': 5, 'size': 2}
 
 distance = lambda point1, point2: np.linalg.norm(point1 - point2)
 
@@ -59,17 +49,19 @@ profile, candidate_positions, voter_positions, voter_labels = four_party_generat
 
 # Define elections
 elections_dict = {SNTV:{}, Bloc:{}, STV:{},
-                 Borda:{}, GreedyCC:{}, PluralityVeto:{},
+                 Borda:{}, GreedyCC:{}, PluralityVeto:{},ExpandingApprovals:{},
                  SMRD:{}, OMRD:{}, DMRD:{'rho': 0.5}}
-elections_list = [SNTV, Bloc, STV, Borda, GreedyCC, 
-                  PluralityVeto, SMRD, OMRD, DMRD]
+
 n_samples = 10000
 
+# set the seed for deterministic results:
+np.random.seed(918717)
+
 # and sample from them
-f = 'metric_voting/data/4party_10k.npz'
+f = 'metric_voting/data/4party1_10k.npz'
 results_list = samples(n_samples, four_party_generator, elections_dict, [four_party_G], k, dim = 2, filename = f)
 result_dict = results_list[0]
 
-f = 'metric_voting/data/4party_10k_1.npz'
+f = 'metric_voting/data/4party1_10k_5cand.npz'
 results_list = samples(n_samples, four_party_generator, elections_dict, [four_party_G], k = 5, dim = 2, filename = f)
 result_dict = results_list[0]

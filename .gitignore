@@ -174,3 +174,4 @@ batch/two_party_sample_collect2.py
 batch/four_party_sample_collect4.py
 batch/two_party_sample_collect3.py
 batch/plot_violin2.py
+batch/plot_distribution2.py
