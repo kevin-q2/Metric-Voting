@@ -165,9 +165,9 @@ cython_debug/
 # Files
 code/votekit_election_sampling.py
 figures/older/
-data/
 *.sh
 *.txt
+
 batch/four_party_sample_collect2.py
 batch/four_party_sample_collect3.py
 batch/two_party_sample_collect2.py
@@ -175,3 +175,12 @@ batch/four_party_sample_collect4.py
 batch/two_party_sample_collect3.py
 batch/plot_violin2.py
 batch/plot_distribution2.py
+
+data/2bloc_10k.npz
+data/2bloc_separated.npz
+data/4bloc_10k.npz
+data/4bloc_5cand.npz
+data/4bloc_10k_5cand.npz
+
+
+
