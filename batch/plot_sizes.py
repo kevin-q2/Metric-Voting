@@ -32,8 +32,15 @@ n_samples = 1000
 
 
 # Specify global parameters for matplotlib
-pal = sns.color_palette("hls", 8)
-tab20_colors = plt.cm.tab20.colors
+colors = ["#0099cd","#ffca5d","#00cd99","#99cd00","#cd0099","#9900cd","#8dd3c7",
+        "#bebada","#fb8072","#80b1d3","#fdb462","#b3de69","#fccde5","#bc80bd",
+        "#ccebc5","#ffed6f","#ffffb3","#a6cee3","#1f78b4","#b2df8a","#33a02c",
+        "#fb9a99","#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a","#b15928",
+        "#64ffda","#00B8D4","#A1887F","#76FF03","#DCE775","#B388FF","#FF80AB",
+        "#D81B60","#26A69A","#FFEA00","#6200EA",
+    ]
+
+colors = colors[:6] + colors[-12::2]
 
 plt.rcParams.update({
     "pgf.texsystem": "pdflatex",
@@ -78,12 +85,16 @@ for s in range(num_sizes):
             s_avg_represent_overall[name][i] = represent_overall
             
     for ename, evals in s_avg_represent.items():
-        size_avg_represent[ename][0][s] = np.mean(evals)
-        size_avg_represent[ename][1][s] = np.std(evals)
+        # BUG fix for now:
+        eval_data = evals[evals >= 1]
+        size_avg_represent[ename][0][s] = np.mean(eval_data)
+        size_avg_represent[ename][1][s] = np.std(eval_data)
         
     for ename, evals in s_avg_represent_overall.items():
-        size_avg_represent_overall[ename][0][s] = np.mean(evals)
-        size_avg_represent_overall[ename][1][s] = np.std(evals)
+        # BUG fix for now:
+        eval_data = evals[evals >= 1]
+        size_avg_represent_overall[ename][0][s] = np.mean(eval_data)
+        size_avg_represent_overall[ename][1][s] = np.std(eval_data)
         
 ##############################################################################################################
 # Plot results
@@ -91,22 +102,23 @@ for s in range(num_sizes):
 fig,ax = plt.subplots(figsize=(10, 6), dpi = 200)
 
 # Define the area you want to zoom in on (for example, around x = 4 to x = 6)
-x1, x2, y1, y2 = 0.2, 0.3, 0.9, 1.3
+#x1, x2, y1, y2 = 0.2, 0.3, 0.9, 1.3
 # Create the inset of the zoomed area
-axins = inset_axes(ax, width="30%", height="30%", loc='lower right')  # Set the location
+#axins = inset_axes(ax, width="30%", height="30%", loc='lower right')  # Set the location
 
 Asizes = [x[group_select]/100 for x in group_sizes]
 for i, (ename,evals) in enumerate(size_avg_represent.items()):
     if name == 'ChamberlinCourant':
-        name_label = 'Chamberlin'
+        name_label = 'CC'
     elif name == 'ExpandingApprovals':
         name_label = 'Expanding'
-    ax.plot(Asizes, evals[0], label=ename, color = tab20_colors[i], linewidth = 3, marker = 'o')
-    ax.fill_between(Asizes, evals[0] - evals[1], evals[0] + evals[1], color=tab20_colors[i], alpha=0.05)
+    ax.plot(Asizes[5:], evals[0][5:], label=ename, color = colors[i], linewidth = 3, marker = 'o')
+    #ax.fill_between(Asizes, evals[0] - evals[1], evals[0] + evals[1], color=tab20_colors[i], alpha=0.05)
     
     # Plot the same data on the inset axes
-    axins.plot(Asizes, evals[0], label=ename, color = tab20_colors[i], linewidth = 1, marker = 'o', markersize=1.5)
+    #axins.plot(Asizes, evals[0], label=ename, color = colors[i], linewidth = 1.5, marker = 'o', markersize=2)
 
+'''
 # Set the limits for the zoomed-in area
 axins.set_xlim(x1, x2)
 axins.set_ylim(y1, y2)
@@ -123,8 +135,13 @@ axins.set_ylabel('')
 
 # Mark the zoomed area on the main plot
 mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5")
+'''
 
-ax.set_ylabel(r'$\alpha$-group-efficiency')
+#ax.set_ylim(0.9, 3)
+ax.set_xlim(0, 1)
+ax.set_xticks([0, 0.25, 0.5, 0.75, 1])
+ax.set_xticklabels(['0', '0.25', '0.5', '0.75', '1'])
+ax.set_ylabel('group-inefficiency')
 ax.set_xlabel('Bloc size')
 #plt.legend(fontsize = 12, loc = 'upper left')
 plt.savefig(output_file1, bbox_inches='tight')
@@ -138,21 +155,25 @@ fig,ax = plt.subplots(figsize=(10, 7), dpi = 200)
 Asizes = [x[group_select]/100 for x in group_sizes]
 for i, (ename,evals) in enumerate(size_avg_represent_overall.items()):
     if name == 'ChamberlinCourant':
-        name_label = 'Chamberlin'
+        name_label = 'CC'
     elif name == 'ExpandingApprovals':
         name_label = 'Expanding'
-    ax.plot(Asizes, evals[0], label=ename, color = tab20_colors[i], linewidth = 3, marker = 'o')
-    ax.fill_between(Asizes, evals[0] - evals[1], evals[0] + evals[1], color=tab20_colors[i], alpha=0.05)
+    ax.plot(Asizes, evals[0], label=ename, color = colors[i], linewidth = 3, marker = 'o')
+    #ax.fill_between(Asizes, evals[0] - evals[1], evals[0] + evals[1], color=tab20_colors[i], alpha=0.05)
 
-plt.ylabel(r'$\alpha$-overall-efficiency')
+plt.ylabel('overall-inefficiency')
 plt.xlabel('Bloc size')
 #plt.legend(fontsize = 12, loc = 'upper left')
 
 names = [ename for ename in size_avg_represent_overall.keys()]
-names = ['Chamberlin' if n == 'ChamberlinCourant' else n for n in names]
+names = ['CC' if n == 'ChamberlinCourant' else n for n in names]
 names = ['Expanding' if n == 'ExpandingApprovals' else n for n in names]
-legend_elements = [Line2D([0], [0], marker = 'o', color=tab20_colors[i], lw=2, label=names[i]) for i in range(len(names))]
+legend_elements = [Line2D([0], [0], marker = 'o', color=colors[i], lw=2, label=names[i]) for i in range(len(names))]
 
+#ax.set_ylim(0.9, 3)
+ax.set_xlim(0, 1)
+ax.set_xticks([0, 0.25, 0.5, 0.75, 1])
+ax.set_xticklabels(['0', '0.25', '0.5', '0.75', '1'])
 fig.legend(handles=legend_elements, loc='lower center', bbox_to_anchor=(0.5, -0.25), ncol=4)
 plt.savefig(output_file2, bbox_inches='tight')
 plt.show()

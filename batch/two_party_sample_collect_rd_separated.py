@@ -48,9 +48,7 @@ two_party_generator = GroupSpatial(m = m, g = len(two_party_G),
 
 
 # Define elections
-elections_dict = {SNTV:{}, Bloc:{}, STV:{},
-                 Borda:{}, ChamberlinCourant:{}, GreedyCC:{}, Monroe:{}, PluralityVeto:{},
-                 ExpandingApprovals:{}, SMRD:{}, OMRD:{}, DMRD:{'rho': 0.5}}
+elections_dict = {SMRD:{}, DMRD:{'rho': 0.5}}
 
 # Number of samples to use
 n_samples = 10000
@@ -59,6 +57,6 @@ n_samples = 10000
 np.random.seed(918717)
 
 # and sample from them
-f = 'metric_voting/data/2bloc_separated.npz'
+f = 'metric_voting/data/2bloc_rd_separated.npz'
 results_list = samples(n_samples, two_party_generator, elections_dict, [two_party_G], k, dim = 2, filename = f)
 result_dict = results_list[0]

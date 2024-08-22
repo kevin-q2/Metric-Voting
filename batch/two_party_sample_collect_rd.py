@@ -26,7 +26,7 @@ m = 20
 k = 4 
 
 # Means for each of the 2 Gaussian distributions
-means = [[0, -4], [0, 4]]
+means = [[0, -2], [0, 2]]
 stds = [0.5, 0.5]  # Standard deviations for each Gaussian
 two_party_G = [50,50]  # Group Sizes
 
@@ -37,7 +37,7 @@ for i,mean in enumerate(means):
 for i,std in enumerate(stds):
     voter_params[i]['scale'] = std
     
-candidate_params = {'low': -8, 'high': 8, 'size': 2}
+candidate_params = {'low': -5, 'high': 5, 'size': 2}
 
 distance = lambda point1, point2: np.linalg.norm(point1 - point2)
 
@@ -48,9 +48,7 @@ two_party_generator = GroupSpatial(m = m, g = len(two_party_G),
 
 
 # Define elections
-elections_dict = {SNTV:{}, Bloc:{}, STV:{},
-                 Borda:{}, ChamberlinCourant:{}, GreedyCC:{}, Monroe:{}, PluralityVeto:{},
-                 ExpandingApprovals:{}, SMRD:{}, OMRD:{}, DMRD:{'rho': 0.5}}
+elections_dict = {SMRD:{}, DMRD:{'rho': 0.5}}
 
 # Number of samples to use
 n_samples = 10000
@@ -59,6 +57,6 @@ n_samples = 10000
 np.random.seed(918717)
 
 # and sample from them
-f = 'metric_voting/data/2bloc_separated.npz'
+f = 'metric_voting/data/2bloc_rd.npz'
 results_list = samples(n_samples, two_party_generator, elections_dict, [two_party_G], k, dim = 2, filename = f)
 result_dict = results_list[0]

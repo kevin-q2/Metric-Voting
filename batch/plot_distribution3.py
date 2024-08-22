@@ -11,10 +11,10 @@ from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, 
 from tools import group_representation, max_group_representation
 
 # Specify results to plot from:
-input_file = 'metric_voting/data/2bloc.npz'
+input_file = 'metric_voting/data/2bloc_separated.npz'
 
 # And where to save them!
-output_file = 'metric_voting/figures/2bloc.png'
+output_file = 'metric_voting/figures/2bloc_separtated.png'
 
 
 # Read data
@@ -78,22 +78,11 @@ candidate_stack_sample = candidate_stack.sample(frac=0.25, random_state=42)
 
 # Set x and y limits for scatter and example plots:
 epsilon = 0.5
-'''
-scatter_xlim = [min(voter_stack.iloc[:,0].min(), candidate_stack.iloc[:,0].min()) - epsilon,
-                max(voter_stack.iloc[:,0].max(), candidate_stack.iloc[:,0].max()) + epsilon]
-scatter_ylim = [min(voter_stack.iloc[:,1].min(), candidate_stack.iloc[:,1].min()) - epsilon,
-                max(voter_stack.iloc[:,1].max(), candidate_stack.iloc[:,1].max()) + epsilon]
+scatter_xlim = [-8 - epsilon,8 + epsilon]
+scatter_ylim = [-8 - epsilon,8 + epsilon]
 
-example_xlim = [min(np.min(voter_example[:,0]), np.min(candidate_example[:,0])) - epsilon,
-                max(np.max(voter_example[:,0]), np.max(candidate_example[:,0])) + epsilon]
-example_ylim = [min(np.min(voter_example[:,1]), np.min(candidate_example[:,1])) - epsilon,
-                max(np.max(voter_example[:,1]), np.max(candidate_example[:,1])) + epsilon]
-'''
-scatter_xlim = [-5 - epsilon,5 + epsilon]
-scatter_ylim = [-5 - epsilon,5 + epsilon]
-
-example_xlim = [-5 - epsilon,5 + epsilon]
-example_ylim = [-5 - epsilon,5 + epsilon]
+example_xlim = [-8 - epsilon,8 + epsilon]
+example_ylim = [-8 - epsilon,8 + epsilon]
 
 
 sns.kdeplot(data=voter_stack_sample, x='x', y='y', color = vc, fill=False,
@@ -101,9 +90,9 @@ sns.kdeplot(data=voter_stack_sample, x='x', y='y', color = vc, fill=False,
 sns.kdeplot(data=candidate_stack_sample, x='x', y='y', color = cc, fill=False,
             thresh=0.1, levels=10, alpha = 0.9, ax = axes[0][0])
 axes[0][0].set_title('KDE')
-axes[0][0].set_title('KDE')
 axes[0][0].set_ylabel('')
 axes[0][0].set_xlabel('')
+
 
 axes[0][1].scatter(voter_stack_sample.iloc[:,0], voter_stack_sample.iloc[:,1],
                    facecolors = vc, edgecolors = 'none', alpha = 0.3, s = 5)
@@ -111,7 +100,6 @@ axes[0][1].scatter(candidate_stack_sample.iloc[:,0], candidate_stack_sample.iloc
                    facecolors = cc, edgecolors = 'none', alpha = 0.01, s = 5)
 axes[0][1].set_xlim(scatter_xlim)
 axes[0][1].set_ylim(scatter_ylim)
-axes[0][1].set_title('Scatter')
 axes[0][1].set_title('Scatter')
 
 
@@ -121,7 +109,6 @@ axes[0][2].scatter(candidate_example[:,0], candidate_example[:,1],
                    facecolors = cc, edgecolors = 'none', alpha = 0.9, s = 30)
 axes[0][2].set_xlim(example_xlim)
 axes[0][2].set_ylim(example_ylim)
-axes[0][2].set_title('Example')
 axes[0][2].set_title('Example')
 
 
@@ -140,11 +127,11 @@ for i,E in enumerate(elections_list):
     # Use a smaller sample for KDE plots (otherwise takes a while to run without much added benefit)
     winner_stack_sample = winner_stack.sample(frac=0.25, random_state=42)
     
+    
     sns.kdeplot(data=voter_stack_sample, x='x', y='y', color = vc, fill=False,
                 thresh=0.1, levels=10, alpha = 1, ax = axes[ax_idx][0])
     sns.kdeplot(data=winner_stack_sample, x='x', y='y', color = wc, fill=False,
                 thresh=0.1, levels=10, alpha = 0.7, ax = axes[ax_idx][0])
-    axes[ax_idx][0].set_ylabel(name_label)
     axes[ax_idx][0].set_ylabel(name_label)
     axes[ax_idx][0].set_xlabel('')
     

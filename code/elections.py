@@ -184,19 +184,19 @@ def SMRD(profile,k):
         raise ValueError('Assumes n >= k')
     voter_indices = np.zeros(n, dtype = int)
     elected = np.zeros(k, dtype = int) - 1
+    elected_mask = np.zeros(m, dtype = bool)
     dictators = np.random.choice(range(n), size = k, replace = False)
     
     for i in range(k):
         dictator = dictators[i]
-        winner = profile[voter_indices[dictator], dictator]
-        elected[i] = winner
         
-        # Find who voted for the winner
-        first_choice_votes = profile[voter_indices, np.arange(n)]
-        mask = (first_choice_votes == winner)
-        
-        # Effectively removes winning candidate from profile
-        voter_indices[mask] += 1
+        # find next available candidate:
+        for j in range(m):
+            choice = profile[j, dictator]
+            if not elected_mask[choice]:
+                elected[i] = choice
+                elected_mask[choice] = True
+                break
         
     return elected    
 
@@ -240,11 +240,20 @@ def DMRD(profile,k, rho = 1):
     voter_probability = np.ones(n)/n
     voter_indices = np.zeros(n, dtype = int)
     elected = np.zeros(k, dtype = int) - 1
+    elected_mask = np.zeros(m, dtype = bool)
     
     for i in range(k):
         dictator = np.random.choice(range(n), p = voter_probability)
-        winner = profile[voter_indices[dictator], dictator]
-        elected[i] = winner
+        
+        # find next available candidate:
+        winner = -1
+        for j in range(m):
+            choice = profile[j, dictator]
+            if not elected_mask[choice]:
+                winner = choice
+                elected[i] = choice
+                elected_mask[choice] = True
+                break
         
         # Find who voted for the winner
         first_choice_votes = profile[voter_indices, np.arange(n)]
