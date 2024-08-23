@@ -7,6 +7,14 @@ We also implement many different election mechanisms and
 provide tools for measuring voter representation in their output. 
 
 ## Getting Started
+To work with the code in this repository we reccomend that you create a new python 
+environment with the required packages -- of which there are only a few (numpy, pandas, pulp, matplotlib, seaborn).
+
+If using Anaconda, you may simply get started by cloning the repository and using the environment file included:
+
+```
+conda env create -f environment.yml
+```
 
 ## Social Choice Mechanisms Supported:
 We provide implementations of the following multi-winner election mechansisms, all 
