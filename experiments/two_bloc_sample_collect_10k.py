@@ -7,7 +7,7 @@ import pulp
 import time
 
 #sys.path.append(os.path.join(os.getcwd(), 'metric_voting/code'))
-sys.path.append('../code')
+sys.path.append('../main')
 from spatial_generation import Spatial, GroupSpatial
 from elections import SNTV,Bloc,STV,Borda, ChamberlinCourant, Monroe, GreedyCC, PluralityVeto,ExpandingApprovals, SMRD, OMRD, DMRD
 from election_sampling import election_sample, samples
