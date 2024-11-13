@@ -31,7 +31,7 @@ def election_sample(generator, elections_dict, gen_input, k):
         voter_labels (list[int]): List with group labels for voters. 
     """
     
-    profile, candidate_positions, voter_positions, voter_labels = generator.generate(gen_input)
+    profile, candidate_positions, voter_positions, voter_labels = generator.generate(*gen_input)
     winners = {}
     
     for E, params in elections_dict.items():
@@ -58,7 +58,7 @@ def samples(s, generator, elections_dict, gen_inputs, k, filename = None, dim = 
         filename (str, optional): Filename to save results to, optional but if None results
             will not be saved. 
         dim (int, optional): Number of dimensions in a voter or candidate position in the metric space,
-            defaults to 2d. 
+            defaults to 2d.
 
     Returns:
         voter_positions (np.ndarray): Numpy matrix where each row encodes a voters position
@@ -74,11 +74,12 @@ def samples(s, generator, elections_dict, gen_inputs, k, filename = None, dim = 
     results_list = []
     for gidx, gen_input in enumerate(gen_inputs):
         m = generator.m
-        n = np.sum(gen_input)
+        #n = np.sum(gen_input)
+        n = int(gen_input[0])
         result_dict = {E.__name__:np.zeros((s, k, dim)) for E in elections_dict.keys()}
         result_dict['voters'] = [np.zeros((s, n, dim))]*s
         result_dict['candidates'] = [np.zeros((s, m, dim))]*s
-        result_dict['labels'] = [np.zeros(s, n)]*s
+        result_dict['labels'] = [np.zeros((s, n))]*s
         
         for i in range(s):
             V,C,W,vlabels = election_sample(generator, elections_dict, gen_input, k)

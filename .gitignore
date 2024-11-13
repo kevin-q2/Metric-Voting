@@ -181,6 +181,10 @@ data/2bloc_separated.npz
 data/4bloc_10k.npz
 data/4bloc_5cand.npz
 data/4bloc_10k_5cand.npz
+data/square.npz
+data/disc.npz
+data/gaussian.npz
+data/four_gaussian.npz
 
 
 
