@@ -1,5 +1,5 @@
 import numpy as np
-from tools import euclidean_distance
+from main.utils import euclidean_distance
 
 
 class Spatial:

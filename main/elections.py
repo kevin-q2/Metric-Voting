@@ -1,6 +1,6 @@
 import numpy as np
 import pulp
-from tools import remove_candidates, borda_matrix
+from main.utils import remove_candidates, borda_matrix
 
 
 def SNTV(profile, k):
