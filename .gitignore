@@ -186,5 +186,4 @@ data/disc.npz
 data/gaussian.npz
 data/four_gaussian.npz
 
-
-
+.envrc
