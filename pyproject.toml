@@ -1,0 +1,12 @@
+[tool.poetry]
+name = "metric_voting"
+version = "0.1.0"
+description = "Does some stuff"
+authors = ["Kevin Quinn <quinnk@bu.edu>"]
+readme = "README.md"
+
+
+[tool.poetry.dependencies]
+python = "^3.9, <3.13"
+pulp = "^2.9.0"
+numpy = "^2.1.0"
