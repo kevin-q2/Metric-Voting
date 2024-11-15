@@ -10,7 +10,7 @@ def euclidean_distance(x,y):
     Returns:
         (float): computed distance
     """
-    return np.linalg.norm(x - y)
+    return np.linalg.norm(x - y, ord = 2)
 
 
 def borda_matrix(profile):

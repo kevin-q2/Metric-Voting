@@ -2,7 +2,7 @@ import numpy as np
 from multiprocessing import Pool
 
 
-def election_sample(generator, elections_dict, gen_input, k):
+def election_sample(generator, elections_dict, generator_input, k):
     """
     Given a ballot generator for creating preference profiles
     from randomly generated metric settings and a dictionary containing a set of election methods
@@ -14,7 +14,7 @@ def election_sample(generator, elections_dict, gen_input, k):
         generator (Spatial): Object for creating random preference profiles.
         elections_dict (dict[callable election, dict[str, Any]]): Election mechanism dictionary where keys are
             election mechanisms and their values are dictionaries with any additional key word arguments.
-        gen_input (int OR list[int]): Input to generator.generate() (different for Spatial vs GroupSpatial)
+        generator_input (int OR list[int]): Input to generator.generate() (different for Spatial vs GroupSpatial)
         k (int): Number of candidates to elect.
 
     Returns:
@@ -31,7 +31,7 @@ def election_sample(generator, elections_dict, gen_input, k):
         voter_labels (list[int]): List with group labels for voters. 
     """
     
-    profile, candidate_positions, voter_positions, voter_labels = generator.generate(*gen_input)
+    profile, candidate_positions, voter_positions, voter_labels = generator.generate(**generator_input)
     winners = {}
     
     for E, params in elections_dict.items():
@@ -42,7 +42,8 @@ def election_sample(generator, elections_dict, gen_input, k):
 
 
 
-def samples(s, generator, elections_dict, gen_inputs, k, filename = None, dim = 2, cpu_count = 8):
+def samples(s, generator, elections_dict, generator_input, k,
+            filename = None, dim = 2, cpu_count = 8):
     """
     For a number of samples, s, sample elections from election_sample()
     and record the results. 
@@ -52,7 +53,7 @@ def samples(s, generator, elections_dict, gen_inputs, k, filename = None, dim = 
         generator (list[Spatial]): List of spatial objects for creating random preference profiles.
         elections_dict (dict[callable election, dict[str, Any]]): Election mechanism dictionary where keys are
             election mechanisms and their values are dictionaries with any additional key word arguments.
-        gen_input (list[int] OR list[list[int]]): List of inputs to generator.generate() 
+        generator_input (List[dict[str, obj]]): Dictionary for input settings to generator.generate() 
             (different ways of doing this for Spatial vs GroupSpatial)
         k (int): Number of candidates to elect.
         filename (str, optional): Filename to save results to, optional but if None results
@@ -72,10 +73,10 @@ def samples(s, generator, elections_dict, gen_inputs, k, filename = None, dim = 
             the winning candidates positions in the metric space. 
     """
     results_list = []
-    for gidx, gen_input in enumerate(gen_inputs):
-        m = generator.m
-        #n = np.sum(gen_input)
-        n = int(gen_input[0])
+    for gidx, gen_input in enumerate(generator_input):
+        n = gen_input['n']
+        m = gen_input['m']
+
         result_dict = {E.__name__:np.zeros((s, k, dim)) for E in elections_dict.keys()}
         result_dict['voters'] = [np.zeros((s, n, dim))]*s
         result_dict['candidates'] = [np.zeros((s, m, dim))]*s
@@ -100,7 +101,7 @@ def samples(s, generator, elections_dict, gen_inputs, k, filename = None, dim = 
                 result_dict[name][i] = Cx
                 
         if not filename is None:
-            if len(gen_inputs) > 1:
+            if len(generator_input) > 1:
                 np.savez(filename[:-4] + str(gidx) + filename[-4:] , **result_dict)
             else:
                 np.savez(filename, **result_dict)

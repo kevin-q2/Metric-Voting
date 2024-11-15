@@ -40,11 +40,10 @@ class Spatial:
         Computes distance between a voter and a candidate,
         defaults to euclidean distance.
     """
-    def __init__(self, m, voter_dist = np.random.uniform, voter_params = None, 
+    def __init__(self, voter_dist = np.random.uniform, voter_params = None, 
                  candidate_dist = np.random.uniform, candidate_params = None, 
                  distance = euclidean_distance):
         
-        self.m = m
         self.voter_dist = voter_dist
         self.candidate_dist = candidate_dist
         
@@ -92,7 +91,7 @@ class Spatial:
 
 
 
-    def generate(self, n):
+    def generate(self, n, m):
         """ 
         Samples a metric position for n voters from
         the voter distribution. Samples a metric position for each candidate
@@ -106,7 +105,7 @@ class Spatial:
         """
         
         candidate_positions = np.array(
-            [self.candidate_dist(**self.candidate_params) for c in range(self.m)]
+            [self.candidate_dist(**self.candidate_params) for c in range(m)]
         )
         voter_positions = np.array(
             [self.voter_dist(**self.voter_params) for v in range(n)]
@@ -114,10 +113,10 @@ class Spatial:
         
         voter_labels = np.zeros(n)
         
-        profile = np.zeros((self.m,n), dtype = np.int64)
+        profile = np.zeros((m,n), dtype = np.int64)
         for i in range(n):
             distances = [self.distance(voter_positions[i,:], candidate_positions[j,:]) 
-                         for j in range(self.m)]
+                         for j in range(m)]
             ranking = np.argsort(distances)
             profile[:,i] = ranking
             
@@ -134,7 +133,8 @@ class GroupSpatial:
     each candidate's positions from input voter and candidate distributions.
     Using generate_profile() outputs a ranked profile which is consistent
     with the sampled positions (respects distances). This model differs from the
-    previous by taking different distributions for each group of voters. 
+    previous by allowing for different distributions for different blocs of voters,
+    as well as different distributions for groups of candidates. 
     
     Args:
     m (int): Number of candidates.
@@ -168,31 +168,32 @@ class GroupSpatial:
         Computes distance between a voter and a candidate,
         defaults to euclidean distance.
     """
-    def __init__(self, m, g, voter_dists = None, voter_params = None, 
+    def __init__(self, voter_groups, candidate_groups,
+                 voter_dists = None, voter_params = None, 
                  candidate_dists = None, candidate_params = None, 
                  distance = euclidean_distance):
         
-        self.m = m
-        self.g = g
+        self.voter_groups = voter_groups
+        self.candidate_groups = candidate_groups
         
         if voter_dists is None:
-            self.voter_dists = [np.random.uniform]*g
+            self.voter_dists = [np.random.uniform]*voter_groups
         else:
-            if len(voter_dists) != g:
+            if len(voter_dists) != voter_groups:
                 raise ValueError('Group size does not match with given voter distributions')
              
             self.voter_dists = voter_dists
             
         if candidate_dists is None:
-            self.candidate_dists = [np.random.uniform]*g
+            self.candidate_dists = [np.random.uniform]*candidate_groups
         else:
-            if len(candidate_dists) != g:
+            if len(candidate_dists) != candidate_groups:
                 raise ValueError('Group size does not match with given candidate distributions')
              
             self.candidate_dists = candidate_dists
         
         if voter_params is None:
-            self.voter_params = [{} for _ in range(g)]
+            self.voter_params = [{} for _ in range(voter_groups)]
             for i,dist in enumerate(self.voter_dists):
                 if dist is np.random.uniform:
                     self.voter_params[i] = {"low": 0.0, "high": 1.0, "size": 2.0}
@@ -211,7 +212,7 @@ class GroupSpatial:
             
             
         if candidate_params is None:
-            self.candidate_params = [{} for _ in range(g)]
+            self.candidate_params = [{} for _ in range(candidate_groups)]
             for i,dist in enumerate(self.candidate_dists):
                 if dist is np.random.uniform:
                     self.candidate_params[i] = {"low": 0.0, "high": 1.0, "size": 2.0}
@@ -242,7 +243,7 @@ class GroupSpatial:
 
 
 
-    def generate(self, n, voter_size_dist, candidate_size_dist, exact = True):
+    def generate(self, n, m, voter_size_dist, candidate_size_dist, exact = True):
         """ 
         Samples a metric position for n voters from
         the voter distribution. Samples a metric position for each candidate
@@ -261,10 +262,13 @@ class GroupSpatial:
                 they are taken to be the relative probability of belonging to each of the groups.
         """
         
-        if len(voter_size_dist) != self.g or len(candidate_size_dist) != self.g:
+        if len(voter_size_dist) != self.voter_groups:
             raise ValueError('Groups of voters and distributions do not match')
         
-        elif exact and (sum(voter_size_dist) != n or sum(candidate_size_dist) != self.m):
+        elif len(candidate_size_dist) != self.candidate_groups:
+            raise ValueError('Groups of candidates and distributions do not match')
+        
+        elif exact and (sum(voter_size_dist) != n or sum(candidate_size_dist) != m):
             raise ValueError('Number of voters or candidates do not match')
         
         elif not exact and (sum(voter_size_dist) != 1 or sum(candidate_size_dist) != 1):
@@ -275,33 +279,33 @@ class GroupSpatial:
             voter_sizes = voter_size_dist
             candidate_sizes = candidate_size_dist  
         else:
-            voter_groups = np.random.choice(self.g, n, p = voter_size_dist)
-            voter_sizes = [np.sum(voter_groups == i) for i in range(self.g)]
+            voter_groups = np.random.choice(self.voter_groups, n, p = voter_size_dist)
+            voter_sizes = [np.sum(voter_groups == i) for i in range(self.voter_groups)]
             
-            candidate_groups = np.random.choice(self.g, self.m, p = candidate_size_dist)
-            candidate_sizes = [np.sum(candidate_groups == i) for i in range(self.g)]
+            candidate_groups = np.random.choice(self.candidate_groups, m, p = candidate_size_dist)
+            candidate_sizes = [np.sum(candidate_groups == i) for i in range(self.candidate_groups)]
         
         
         #candidate_positions = np.array(
         #    [self.candidate_dist(**self.candidate_params) for c in range(self.m)]
         #)
         
-        candidate_positions = [[self.candidate_dists[i](**self.candidate_params[i]) for v in range(candidate_sizes[i])] 
-                           for i in range(self.g) if candidate_sizes[i] != 0]
+        candidate_positions = [[self.candidate_dists[i](**self.candidate_params[i]) for _ in range(candidate_sizes[i])] 
+                           for i in range(self.candidate_groups) if candidate_sizes[i] != 0]
         candidate_positions = np.vstack(candidate_positions)
         
-        voter_positions = [[self.voter_dists[i](**self.voter_params[i]) for v in range(voter_sizes[i])] 
-                           for i in range(self.g) if voter_sizes[i] != 0]
+        voter_positions = [[self.voter_dists[i](**self.voter_params[i]) for _ in range(voter_sizes[i])] 
+                           for i in range(self.voter_groups) if voter_sizes[i] != 0]
         voter_positions = np.vstack(voter_positions)
         
-        voter_labels = [[i]*voter_sizes[i] for i in range(self.g)]
+        voter_labels = [[i]*voter_sizes[i] for i in range(self.voter_groups)]
         voter_labels = np.array([item for sublist in voter_labels for item in sublist])
         voter_labels = voter_labels.flatten()
         
-        profile = np.zeros((self.m,n), dtype = np.int64)
+        profile = np.zeros((m,n), dtype = np.int64)
         for i in range(n):
             distances = [self.distance(voter_positions[i,:], candidate_positions[j,:]) 
-                         for j in range(self.m)]
+                         for j in range(m)]
             ranking = np.argsort(distances)
             profile[:,i] = ranking
             

@@ -95,7 +95,7 @@ def STV(profile, k):
                 c_voters = candidate_voters[c]
                 total_votes = np.sum(surplus[c_voters])
                 surplus_votes = total_votes - droop
-                surplus[c_voters] = surplus_votes / total_votes
+                surplus[c_voters] = surplus_votes / total_votes # This is where I'm not sure the transfer is correct...
 
                 # move voter's surplus to their next preferred candidate
                 for v in c_voters:
@@ -161,7 +161,7 @@ def Borda(profile, k):
     for i in range(n):
         for j in range(m):
             c = profile[j,i]
-            candidate_scores[c] += (m-1) - j
+            candidate_scores[c] += (m-1) - j # Should this be m - j??
     
     elected = np.argsort(candidate_scores)[::-1][:k]
     return elected
