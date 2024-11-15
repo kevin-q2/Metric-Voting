@@ -3,18 +3,9 @@ from .election_sampling import (
     samples,
 )
 
-from .elections import (
-    SNTV
-)
+from .elections import SNTV
 
-from .spatial_generation import (
-    Spatial,
-    GroupSpatial
-)
+from .spatial_generation import Spatial, GroupSpatial
 
 
-from .utils import (
-    group_representation,
-    costs
-)
-
+from .utils import group_representation, costs, borda_matrix, remove_candidates
