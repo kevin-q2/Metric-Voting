@@ -280,6 +280,7 @@ class GroupSpatial:
 
     # Peter Note: The names of the parameters and the parameters that have been documented are different
     # Peter Note: These variable names are actually confusing.
+    # Peter Note: Break this into two cases: exact and not exact (different functions)
     def generate(self, n, m, voter_size_dist, candidate_size_dist, exact=True):
         """
         Samples a metric position for n voters from
@@ -316,7 +317,7 @@ class GroupSpatial:
             candidate_sizes = candidate_size_dist
         else:
             voter_groups = np.random.choice(self.voter_groups, n, p=voter_size_dist)
-            voter_sizes = [np.sum(voter_groups == i) for i in range(self.voter_groups)]
+            _, voter_sizes = np.unique(voter_groups, return_counts=True)
 
             candidate_groups = np.random.choice(
                 self.candidate_groups, m, p=candidate_size_dist
@@ -344,7 +345,6 @@ class GroupSpatial:
 
         voter_labels = [[i] * voter_sizes[i] for i in range(self.voter_groups)]
         voter_labels = np.array([item for sublist in voter_labels for item in sublist])
-        voter_labels = voter_labels.flatten()
 
         profile = np.zeros((m, n), dtype=np.int64)
         for i in range(n):

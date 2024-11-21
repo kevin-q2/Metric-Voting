@@ -6,11 +6,12 @@
 
 
 import numpy as np
+from numpy.typing import NDArray
 import pulp
 from .utils import remove_candidates, borda_matrix
 
 
-def SNTV(profile, k):
+def SNTV(profile: NDArray, k: int) -> NDArray:
     """
     Elect k candidates with the largest plurality scores.
 
@@ -162,6 +163,7 @@ def STV(profile, k):
     return np.where(elected_mask == 1)[0]
 
 
+# Peter Note: Add borda_fn like we did for Borda matrix
 def Borda(profile, k):
     """
     Elect k candidates with the largest Borda scores.
@@ -193,11 +195,11 @@ def ChamberlinCourant(profile, k):
     (where assignment scores are calculated with the borda score).
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
     m, n = profile.shape
     B = borda_matrix(profile).T  # n x m matrix after transpose
@@ -241,11 +243,11 @@ def Monroe(profile, k):
     exactly floor(n/k) or ceiling(n/k) voters.
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
     m, n = profile.shape
     B = borda_matrix(profile).T  # n x m matrix after transpose
@@ -292,11 +294,11 @@ def GreedyCC(profile, k):
     the candidate which increases the assignment scores the most.
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
     m, n = profile.shape
     B = borda_matrix(profile)
@@ -320,6 +322,7 @@ def GreedyCC(profile, k):
     return np.where(is_elected)[0]
 
 
+# Peter Note: Chunk this out so that you can test the random sections
 def PluralityVeto(profile, k):
     """
     Elect k candidates with the Plurality Veto mechanism. Counts
@@ -327,11 +330,11 @@ def PluralityVeto(profile, k):
     lets voters veto candidates until there are only k left.
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
     m, n = profile.shape
     candidate_scores = np.zeros(m)
@@ -373,6 +376,7 @@ def PluralityVeto(profile, k):
     return elected
 
 
+# Peter Note: Add link to paper
 def ExpandingApprovals(profile, k):
     """
     Elect k candidates using the expanding approvals rule seen in:
@@ -380,11 +384,11 @@ def ExpandingApprovals(profile, k):
     Kalayci, Kempe, Kher 2024). Please refer to their paper for a full description.
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
     m, n = profile.shape
     droop = np.ceil(n / k)
@@ -393,6 +397,7 @@ def ExpandingApprovals(profile, k):
     neighborhood = np.zeros(profile.shape)
     random_order = np.random.permutation(n)
 
+    # Peter Note: Move some of this to another function so we don't have indent of death
     for t in range(m):
         for v in random_order:
             if uncovered_mask[v]:
@@ -430,7 +435,6 @@ def SMRD(profile, k):
     m, n = profile.shape
     if n < k:
         raise ValueError("Assumes n >= k")
-    voter_indices = np.zeros(n, dtype=int)
     elected = np.zeros(k, dtype=int) - 1
     elected_mask = np.zeros(m, dtype=bool)
     dictators = np.random.choice(range(n), size=k, replace=False)
@@ -515,7 +519,7 @@ def DMRD(profile, k, rho=1):
     return elected
 
 
-def PRD(profile, k, p=None, q=None, rho=1):
+def PRD(profile, k, p=None, q=None):
     """
     Elect k candidates with k iterations of Proportional Random Dictator (PRD).
     At each iteration, with probability p choose a winner with

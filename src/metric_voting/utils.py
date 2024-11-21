@@ -1,8 +1,11 @@
+# Peter Note: Change the 'dists' to 'distances' so that it is not
+# confused with 'distributions'
+
 import numpy as np
-from typing import Callable
+from numpy.typing import NDArray
+from typing import Callable, Tuple, Any, Optional, Union
 
 
-# Peter Note: CHECKED!
 def euclidean_distance(x, y):
     """Euclidean Distance between points x and y
     Args:
@@ -15,7 +18,11 @@ def euclidean_distance(x, y):
     return np.linalg.norm(x - y, ord=2)
 
 
-def cost_array(voter_positions, candidate_positions, distance=euclidean_distance):
+def cost_array(
+        voter_positions: NDArray, 
+        candidate_positions: NDArray, 
+        distance_fn: Callable = euclidean_distance
+) -> NDArray:
     """
     Given a set of voter and candidate positions along with a distance function,
     returns an (m x n) array with each entry i,j storing the
@@ -35,11 +42,14 @@ def cost_array(voter_positions, candidate_positions, distance=euclidean_distance
     dists = np.zeros((len(candidate_positions), len(voter_positions)))
     for i in range(len(candidate_positions)):
         for j in range(len(voter_positions)):
-            dists[i, j] = distance(voter_positions[j], candidate_positions[i])
+            dists[i, j] = distance_fn(voter_positions[j], candidate_positions[i])
     return dists
 
 
-def euclidean_cost_array(voter_positions, candidate_positions):
+def euclidean_cost_array(
+    voter_positions: NDArray, 
+    candidate_positions: NDArray,
+) -> NDArray:
     """
     Given a set of voter and candidate positions, returns an
     (m x n) array with each entry i,j storing the
@@ -60,7 +70,7 @@ def euclidean_cost_array(voter_positions, candidate_positions):
     return dists
 
 
-def cost(dists):
+def cost(dists: NDArray) -> float:
     """
     Given an (m x n) cost array storing all distances from each voter to
     each candidate, finds the total cost by summing all entries.
@@ -74,7 +84,7 @@ def cost(dists):
     return np.sum(dists)
 
 
-def candidate_costs(dists):
+def candidate_costs(dists: NDArray) -> NDArray:
     """
     Given an (m x n) cost array storing all distances from each voter to
     each candidate, finds the total cost for each candidate
@@ -90,7 +100,7 @@ def candidate_costs(dists):
     return candidate_dists
 
 
-def voter_costs(dists):
+def voter_costs(dists: NDArray) -> NDArray:
     """
     Given an (m x n) cost array storing all distances from each voter to
     each candidate, finds the total cost for each candidate
@@ -106,7 +116,7 @@ def voter_costs(dists):
     return voter_dists
 
 
-def proportional_assignment_cost(dists, size):
+def proportional_assignment_cost(dists: NDArray, size: int) -> float:
     """
     Find the cost of voters to some best subset of candidates
     with a given size.
@@ -125,7 +135,13 @@ def proportional_assignment_cost(dists, size):
     return np.sum(np.sort(candidate_dists)[:size])
 
 
-def group_inefficiency(dists, winner_indices, voter_labels, bloc_label, size=None):
+def group_inefficiency(
+    dists: NDArray, 
+    winner_indices: NDArray, 
+    voter_labels: NDArray, 
+    bloc_label: int, 
+    size: Optional[int] = None
+) -> float:
     """
     Computes the group inefficiency score as the cost ratio between
     best subset of winners, and the best subset of all candidates.
@@ -147,7 +163,7 @@ def group_inefficiency(dists, winner_indices, voter_labels, bloc_label, size=Non
     Returns:
         float: Group inefficiency score.
     """
-    m, n = dists.shape
+    _, n = dists.shape
     k = len(winner_indices)
 
     if size is None:
@@ -160,49 +176,72 @@ def group_inefficiency(dists, winner_indices, voter_labels, bloc_label, size=Non
         cost1 = proportional_assignment_cost(bloc_dists[winner_indices, :], size)
         cost2 = proportional_assignment_cost(bloc_dists, size)
         return cost1 / cost2
-    else:
-        return 0
+
+    return 0
 
 
-def random_group_inefficiency(dists, winner_indices, size=None):
-    """
-    For a randomly selected bloc of voters, computes the group
-    inefficiency score.
-    """
-    m, n = dists.shape
-    k = len(winner_indices)
+# WIP
+def generate_uniform_random_voter_bloc(n, k):
     min_size = int((n / k) + 1)
     bloc_size = np.random.randint(min_size, n + 1)
     random_bloc = np.random.choice(n, bloc_size, replace=False)
     voter_labels = np.zeros(n)
     voter_labels[random_bloc] = 1
-    return group_inefficiency(dists, winner_indices, voter_labels, 1, size), random_bloc
+    return random_bloc, voter_labels 
 
 
-def greedy_group_inefficiency(dists, winner_indices, size=None):
+def random_group_inefficiency(
+    dists: NDArray, 
+    winner_indices: NDArray, 
+    size: Optional[int] = None,
+) -> Tuple[float, NDArray]:
+    """
+    For a randomly selected bloc of voters, computes the group
+    inefficiency score.
+    """
+    _, n = dists.shape
+    k = len(winner_indices)
+    random_bloc, voter_labels = generate_uniform_random_voter_bloc(n, k)
+    return group_inefficiency(dists, winner_indices, voter_labels, bloc_label=1, size=size), random_bloc
+
+
+def greedy_group_inefficiency(
+    cost_arr: NDArray, 
+    winner_indices: NDArray, 
+    size: Optional[int] = None
+) -> Tuple[float, NDArray]:
     """
     For a greedily selected bloc of voters, computes the group
     inefficiency score.
     """
-    m, n = dists.shape
+    _, n = cost_arr.shape
     k = len(winner_indices)
     min_size = int((n / k) + 1)
     voter_labels = np.zeros(n)
 
-    winner_set_dists = np.array([np.sum(dists[winner_indices, i]) for i in range(n)])
-    candidate_set_dists = np.array([np.sum(np.sort(dists[:, i])[:k]) for i in range(n)])
+    # Get cost to winners for all voters (1,n) size
+    winner_set_cost_arr = np.array([np.sum(cost_arr[winner_indices], axis = 0)])
 
-    # winner_set_dists = np.array([np.min(dists[winner_indices,i]) for i in range(n)])
-    # candidate_set_dists = np.array([np.min(dists[:,i]) for i in range(n)])
+    # Cost of best k candidates for each voter (1,n) size
+    candidate_set_cost_arr = np.array([np.sum(np.sort(cost_arr, axis = 0)[:k, :], axis = 0)])
 
-    greedy_scores = winner_set_dists / candidate_set_dists
-    greedy_order = np.argsort(greedy_scores)[::-1]
+    # Inefficiency by voter
+    greedy_scores = winner_set_cost_arr / candidate_set_cost_arr
+    greedy_order = np.flip(np.argsort(greedy_scores))
 
     voter_labels[greedy_order[:min_size]] = 1
-    ineff = group_inefficiency(dists, winner_indices, voter_labels, 1, size)
+    ineff = group_inefficiency(cost_arr, winner_indices, voter_labels, 1, size)
+
+
+    # Peter Note: This needs another loop. Could add later voter that then makes earlier
+    # voter a good add to the inefficiency
     for i in greedy_order[min_size:]:
-        voter_labels[i] = 1
-        new_ineff = group_inefficiency(dists, winner_indices, voter_labels, 1, size)
+        new_ineff = 0
+
+        if voter_labels[i] != 1:
+            voter_labels[i] = 1
+            new_ineff = group_inefficiency(cost_arr, winner_indices, voter_labels, 1, size)
+
         if new_ineff > ineff:
             ineff = new_ineff
         else:
@@ -212,33 +251,36 @@ def greedy_group_inefficiency(dists, winner_indices, size=None):
     return ineff, greedy_bloc
 
 
-def random_greedy_group_inefficiency(dists, winner_indices, size=None):
+def random_greedy_group_inefficiency(cost_arr, winner_indices, size=None):
     """
     For a greedily selected bloc of voters, computes the group
     inefficiency score.
     """
-    m, n = dists.shape
+    _, n = cost_arr.shape
     k = len(winner_indices)
     min_size = int((n / k) + 1)
     voter_labels = np.zeros(n)
 
-    winner_set_dists = np.array([np.sum(dists[winner_indices, i]) for i in range(n)])
-    candidate_set_dists = np.array([np.sum(np.sort(dists[:, i])[:k]) for i in range(n)])
+    # Get cost to winners for all voters (1,n) size
+    winner_set_cost_arr = np.array([np.sum(cost_arr[winner_indices], axis = 0)])
 
-    # winner_set_dists = np.array([np.min(dists[winner_indices,i]) for i in range(n)])
-    # candidate_set_dists = np.array([np.min(dists[:,i]) for i in range(n)])
-
-    greedy_scores = winner_set_dists / candidate_set_dists
+    # Cost of best k candidates for each voter (1,n) size
+    candidate_set_cost_arr = np.array([np.sum(np.sort(cost_arr, axis = 0)[:k, :], axis = 0)])
 
     # Sort with noise:
+    greedy_scores = winner_set_cost_arr / candidate_set_cost_arr
+
+    # Change the standard dev to be the std_dev of pairwise score distances
     greedy_scores = greedy_scores + np.random.normal(0, np.std(greedy_scores), n)
     greedy_order = np.argsort(greedy_scores)[::-1]
 
     voter_labels[greedy_order[:min_size]] = 1
-    ineff = group_inefficiency(dists, winner_indices, voter_labels, 1, size)
+    ineff = group_inefficiency(cost_arr, winner_indices, voter_labels, 1, size)
+    
+    # Also needs another loop
     for i in greedy_order[min_size:]:
         voter_labels[i] = 1
-        new_ineff = group_inefficiency(dists, winner_indices, voter_labels, 1, size)
+        new_ineff = group_inefficiency(cost_arr, winner_indices, voter_labels, 1, size)
         if new_ineff > ineff:
             ineff = new_ineff
         else:
@@ -286,8 +328,8 @@ def max_group_representation(voter_positions, candidate_positions,
 
 
 def borda_matrix(
-    profile, scoring_scheme: Callable[[int, int], float] = lambda x, y: x - y
-):
+    profile: NDArray, scoring_scheme: Callable[[int, int], float] = lambda x, y: x - y
+) -> NDArray:
     """
     Computes a borda matrix given an input preference profile.
     Specifically, for an (m x n) profile the borda matrix at
@@ -308,7 +350,7 @@ def borda_matrix(
     return B
 
 
-def remove_candidates(profile, candidates):
+def remove_candidates(profile: NDArray, candidates: Union[list, NDArray]) -> NDArray:
     """
     Removes a list or array of candidates from the given preference profile,
     and returns the modified profile.

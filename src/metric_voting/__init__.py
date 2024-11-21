@@ -8,4 +8,4 @@ from .elections import SNTV, Bloc
 from .spatial_generation import Spatial, GroupSpatial
 
 
-from .utils import group_representation, costs, borda_matrix, remove_candidates
+from .utils import group_inefficiency, borda_matrix, remove_candidates
