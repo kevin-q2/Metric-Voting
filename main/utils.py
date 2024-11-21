@@ -1,5 +1,5 @@
 import numpy as np
-
+from typing import Callable
 
 def euclidean_distance(x,y):
     """Euclidean Distance between points x and y
@@ -13,173 +13,137 @@ def euclidean_distance(x,y):
     return np.linalg.norm(x - y, ord = 2)
 
 
-def borda_matrix(profile):
+def cost_array(voter_positions, candidate_positions, distance = euclidean_distance):
     """
-    Computes a borda matrix given an input preference profile. 
-    Specifically, for an (m x n) profile the borda matrix at 
-    entry [i,j] records the borda score of candidate i for voter j.
+    Given a set of voter and candidate positions along with a distance function,
+    returns an (m x n) array with each entry i,j storing the 
+    distance from candidate i to voter j.
     
-    Args:
-        profile (np.ndarray): (candidates x voters) Preference profile matrix.
-    
-    Returns:
-        (np.ndarray): Computed borda matrix.
-    """
-    m,n = profile.shape
-    B = np.zeros((m,n))
-    for i in range(profile.shape[0]):
-        for j in range(profile.shape[1]):
-            B[profile[i,j], j] = (m - 1) - i
-            
-    return B
-
-
-def remove_candidates(profile, candidates):
-    """
-    Removes a list or array of candidates from the given preference profile,
-    and returns the modified profile.
-    
-    Args:
-        profile (np.ndarray): (candidates x voters) Preference profile matrix.
-        candidates (list[int] OR np.ndarray): Candidates to remove from the profile.
-    
-    Returns:
-        (np.ndarray): New preference profile with candidates removed.
-    """
-    
-    # Convert candidates to a set for faster lookup
-    candidates_set = set(candidates)
-    
-    # Determine the size of the new profile
-    remaining_candidates = profile.shape[0] - len(candidates)
-    new_profile = np.zeros((remaining_candidates, profile.shape[1]), dtype=int)
-    
-    for col in range(profile.shape[1]):
-        # Filter out candidates that are in the candidates_set
-        new_rank = [i for i in profile[:,col] if i not in candidates_set]
-        # Assign the new rank to the corresponding column in the new profile
-        new_profile[:,col] = new_rank
-    
-    return new_profile
-
-
-def cost(voter_positions, candidate_positions, distance = euclidean_distance):
-    """ 
-    With some distance function, computes the sum of distances 
-    distance(voter, candidate) for every 
-    voter candidate pair in the input list of voter and candidate positions.
-
     Args:
         voter_positions (np.ndarray): (n x d) Array of voter positions in a metric space.
         candidate_positions (np.ndarray): (m x d) Array of candidate positions in a metric space.
         distance (callable, optional): Callable distance function which should
             take as input two d dimensional vectors and output a real number, 
             defaults to euclidean_distance (see euclidean_distance() above for a reference format).
+    
+    Returns:
+        (np.ndarray): Size (m x n) array of distances from voters to candidates.
+    """
+    
+    dists = np.zeros((len(candidate_positions), len(voter_positions)))
+    for i in range(len(candidate_positions)):
+        for j in range(len(voter_positions)):
+            dists[i,j] = distance(voter_positions[j], candidate_positions[i])
+    return dists
 
+
+def euclidean_cost_array(voter_positions, candidate_positions):
+    """
+    Given a set of voter and candidate positions, returns an
+    (m x n) array with each entry i,j storing the 
+    distance from candidate i to voter j.
+    
+    NOTE: This is an optimized version of cost_array() 
+        which assumes distance is euclidean.
+
+    Args:
+        voter_positions (np.ndarray): (n x d) Array of voter positions in a metric space.
+        candidate_positions (np.ndarray): (m x d) Array of candidate positions in a metric space.
+
+    Returns:
+        (np.ndarray): Size (m x n) array of distances from voters to candidates.
+    """
+    diffs = voter_positions[np.newaxis, :, :] - candidate_positions[:, np.newaxis, :]
+    dists = np.sqrt(np.sum(diffs ** 2, axis=-1))
+    return dists
+
+
+def cost(dists):
+    """
+    Given an (m x n) cost array storing all distances from each voter to 
+    each candidate, finds the total cost by summing all entries.
+    
+    Args:
+        dists (np.ndarray): (m x n) Array of distances from candidates to voters.
+        
     Returns:
         float: Sum of distances (cost).
     """
-    cost_sum = 0
-    for v in voter_positions:
-        for c in candidate_positions:
-            cost_sum += distance(v,c)
-    return cost_sum
+    return np.sum(dists)
 
 
-def costs(voter_positions, candidate_positions):
+def candidate_costs(dists):
     """
-    Given a set of voter and candidate positions, returns an
-    array of costs where each entry is the sum of 
-    distances from each voter to a single candidate. For example, 
-    for the candidate described by row i in candidate_positions, the sum of
-    distances from every voter to that candidate will be output in index i
-    of the returned array.
+    Given an (m x n) cost array storing all distances from each voter to 
+    each candidate, finds the total cost for each candidate 
+    summed along all voters.
     
-    NOTE: This optimized to be efficient, and therefore 
-        only uses euclidean distance for now. 
-
     Args:
-        voter_positions (np.ndarray): (n x d) Array of voter positions in a metric space.
-        candidate_positions (np.ndarray): (m x d) Array of candidate positions in a metric space.
+        dists (np.ndarray): (m x n) Array of distances from candidates to voters.
 
     Returns:
-        (np.ndarray): Array of distances from voters to candidates.
+        (np.ndarray): Length m array of candidate distances.
     """
-    # cost to each candidate:
-    diffs = voter_positions[np.newaxis, :, :] - candidate_positions[:, np.newaxis, :]
-    distances = np.sqrt(np.sum(diffs ** 2, axis=-1))
-    cost_array = np.sum(distances, axis=1)
-    return cost_array
+    candidate_dists = np.sum(dists, axis=1)
+    return candidate_dists
 
 
-def voter_costs(voter_positions, candidate_positions):
+def voter_costs(dists):
     """
-    Given a set of voter and candidate positions, returns an
-    array of costs where each entry is the sum of 
-    distances from each candidate to a single voter. For example, 
-    for the voter described by row i in voter_positions, the sum of
-    distances from every candidate to that voter will be output in index i
-    of the returned array.
+    Given an (m x n) cost array storing all distances from each voter to 
+    each candidate, finds the total cost for each candidate 
+    summed along all voters.
     
-    NOTE: This optimized to be efficient, and therefore 
-        only uses euclidean distance for now. 
-
     Args:
-        voter_positions (np.ndarray): (n x d) Array of voter positions in a metric space.
-        candidate_positions (np.ndarray): (m x d) Array of candidate positions in a metric space.
+        dists (np.ndarray): (m x n) Array of distances from candidates to voters.
 
     Returns:
         (np.ndarray): Array of distances from candidates to voters.
     """
-    # cost to each voter of summed over every candidate:
-    diffs = voter_positions[np.newaxis, :, :] - candidate_positions[:, np.newaxis, :]
-    distances = np.sqrt(np.sum(diffs ** 2, axis=-1))
-    cost_array = np.sum(distances, axis=0)
-    return cost_array
+    voter_dists = np.sum(dists, axis=0)
+    return voter_dists
 
 
 
-def best_group_cost(voter_positions, candidate_positions, size):
+def proportional_assignment_cost(dists, size):
     """
     Find the cost of voters to some best subset of candidates
-    from candidate_positions with a given size. For example, 
-    if size = k, then this will output the sum of distances from each 
-    voter to the size k subset of candidates which will minimize
-    the sum overall.  
+    with a given size.
 
     Args:
-        voter_positions (np.ndarray): (n x d) Array of voter positions in a metric space.
-        candidate_positions (np.ndarray): (m x d) Array of candidate positions in a metric space.
+        dists (np.ndarray): (m x n) Array of distances from candidates to voters.
         size (int): Size required for the best group / subset of candidates. 
 
     Returns:
         float: Sum of distances (cost).
     """
-    if size > len(candidate_positions):
+    if size > len(dists):
         raise ValueError('Requested size is too large!')
     
-    cost_array = costs(voter_positions, candidate_positions)
-    best_cands = np.argsort(cost_array)[:size]
-    return np.sum(cost_array[best_cands])
+    candidate_dists = candidate_costs(dists)
+    return np.sum(np.sort(candidate_dists)[:size])
 
 
-def group_representation(voter_positions, candidate_positions, 
-                         voter_labels, winner_positions, group_label, size = None):
+def group_inefficiency(
+    dists,
+    winner_indices,
+    voter_labels,
+    bloc_label,
+    size = None
+    ):
     """
     Computes the group inefficiency score as the cost ratio between 
-    best group among the winners and the best group among all candidates within
-    candidate positions.
+    best subset of winners, and the best subset of all candidates. 
     
     Optional: Instead of using proportionally sized representative sets, set 
-            size = k to enforce that voters are represented by a constant size k set. 
+            the size parameter to enforce that voters are represented by a constant size set. 
     
     Args:
-        voter_positions (np.ndarray): (n x d) Array of voter positions in a metric space.
-        candidate_positions (np.ndarray): (m x d) Array of candidate positions in a metric space.
+        dists (np.ndarray): (m x n) Array of distances from candiates to voters.
+        winner_indices (np.ndarray[int]): Length k array of winning candidate indices.
         voter_labels (np.ndarray[int]): Integer array where index i gives 
                                         the group membership of voter i.
-        winners (np.ndarray): (k x d) Array of winning candidate positions. 
-        group_label (int): Group label to compute score for. 
+        bloc_label (int): Bloc label to compute score for. 
         size (int, optional): Pre-defined constant size of the representative set
             for input voters. Defaults to None, in which case size is computed 
             proportional to the size of the input set of voters *In most cases 
@@ -188,24 +152,22 @@ def group_representation(voter_positions, candidate_positions,
     Returns:
         float: Group inefficiency score. 
     """
-    n_voters = len(voter_positions)
-    k = len(winner_positions)
-    group = [i for i in range(len(voter_labels)) if voter_labels[i] == group_label]
+    m,n = dists.shape
+    k = len(winner_indices)
+    
     if size is None:
         # Proportional sizing!
-        Rsize = int(len(group)/n_voters * k)
-    else:
-        Rsize = size
+        bloc_size = np.sum(voter_labels == bloc_label)
+        size = int(bloc_size/n * k)
     
-    if Rsize != 0:
-        G = voter_positions[group, :]
-        # find the best group cost among winners and among all candidates
-        cost1 = best_group_cost(G, winner_positions, Rsize)
-        cost2 = best_group_cost(G, candidate_positions, Rsize)
-        # and return the ratio!
+    if size != 0:
+        bloc_dists = dists[:, voter_labels == bloc_label]
+        cost1 = proportional_assignment_cost(bloc_dists[winner_indices, :], size)
+        cost2 = proportional_assignment_cost(bloc_dists, size)
         return cost1/cost2
     else:
         return 0
+
     
 def max_group_representation(voter_positions, candidate_positions, 
                              voter_labels, winners, size = None):
@@ -239,6 +201,47 @@ def max_group_representation(voter_positions, candidate_positions,
             alpha = g_alpha
             
     return alpha
+
+
+
+def borda_matrix(
+    profile,
+    scoring_scheme: Callable[[int, int], float] = lambda x, y: x - y
+    ):
+    """
+    Computes a borda matrix given an input preference profile. 
+    Specifically, for an (m x n) profile the borda matrix at 
+    entry [i,j] records the borda score of candidate i for voter j.
+    
+    Args:
+        profile (np.ndarray): (candidates x voters) Preference profile matrix.
+    
+    Returns:
+        (np.ndarray): Computed (m x n) borda matrix.
+    """
+    m,n = profile.shape
+    B = np.zeros((m,n))
+    for i in range(profile.shape[0]):
+        for j in range(profile.shape[1]):
+            B[profile[i,j], j] = scoring_scheme(m, i)
+            
+    return B
+
+
+def remove_candidates(profile, candidates):
+    """
+    Removes a list or array of candidates from the given preference profile,
+    and returns the modified profile.
+    
+    Args:
+        profile (np.ndarray): (candidates x voters) Preference profile matrix.
+        candidates (list[int] OR np.ndarray): Candidates to remove from the profile.
+    
+    Returns:
+        (np.ndarray): New (m - len(candidates) x n) preference profile with candidates removed.
+    """
+    
+    return np.array([row[~np.isin(row, candidates)] for row in profile.T]).T
         
 
 
