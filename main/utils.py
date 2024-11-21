@@ -167,8 +167,94 @@ def group_inefficiency(
         return cost1/cost2
     else:
         return 0
-
     
+    
+    
+def random_group_inefficiency(dists, winner_indices, size = None):
+    """
+    For a randomly selected bloc of voters, computes the group 
+    inefficiency score. 
+    """
+    m,n = dists.shape
+    k = len(winner_indices)
+    min_size = int((n/k) + 1)
+    bloc_size = np.random.randint(min_size, n + 1)
+    random_bloc = np.random.choice(n, bloc_size, replace = False)
+    voter_labels = np.zeros(n)
+    voter_labels[random_bloc] = 1
+    return group_inefficiency(dists, winner_indices, voter_labels, 1, size), random_bloc
+
+
+def greedy_group_inefficiency(dists, winner_indices, size = None):
+    """
+    For a greedily selected bloc of voters, computes the group 
+    inefficiency score.
+    """
+    m,n = dists.shape
+    k = len(winner_indices)
+    min_size = int((n/k) + 1)
+    voter_labels = np.zeros(n)
+    
+    winner_set_dists = np.array([np.sum(dists[winner_indices,i]) for i in range(n)])
+    candidate_set_dists = np.array([np.sum(np.sort(dists[:,i])[:k]) for i in range(n)])
+    
+    #winner_set_dists = np.array([np.min(dists[winner_indices,i]) for i in range(n)])
+    #candidate_set_dists = np.array([np.min(dists[:,i]) for i in range(n)])
+    
+    greedy_scores = winner_set_dists/candidate_set_dists
+    greedy_order = np.argsort(greedy_scores)[::-1]
+    
+    voter_labels[greedy_order[:min_size]] = 1
+    ineff = group_inefficiency(dists, winner_indices, voter_labels, 1, size)
+    for i in greedy_order[min_size:]:
+        voter_labels[i] = 1
+        new_ineff = group_inefficiency(dists, winner_indices, voter_labels, 1, size)
+        if new_ineff > ineff:
+            ineff = new_ineff
+        else:
+            voter_labels[i] = 0
+            
+    greedy_bloc = np.where(voter_labels == 1)[0]
+    return ineff, greedy_bloc
+
+
+def random_greedy_group_inefficiency(dists, winner_indices, size = None):
+    """
+    For a greedily selected bloc of voters, computes the group 
+    inefficiency score.
+    """
+    m,n = dists.shape
+    k = len(winner_indices)
+    min_size = int((n/k) + 1)
+    voter_labels = np.zeros(n)
+    
+    winner_set_dists = np.array([np.sum(dists[winner_indices,i]) for i in range(n)])
+    candidate_set_dists = np.array([np.sum(np.sort(dists[:,i])[:k]) for i in range(n)])
+    
+    #winner_set_dists = np.array([np.min(dists[winner_indices,i]) for i in range(n)])
+    #candidate_set_dists = np.array([np.min(dists[:,i]) for i in range(n)])
+    
+    greedy_scores = winner_set_dists/candidate_set_dists
+
+    # Sort with noise:
+    greedy_scores = greedy_scores + np.random.normal(0, np.std(greedy_scores), n)
+    greedy_order = np.argsort(greedy_scores)[::-1]
+    
+    voter_labels[greedy_order[:min_size]] = 1
+    ineff = group_inefficiency(dists, winner_indices, voter_labels, 1, size)
+    for i in greedy_order[min_size:]:
+        voter_labels[i] = 1
+        new_ineff = group_inefficiency(dists, winner_indices, voter_labels, 1, size)
+        if new_ineff > ineff:
+            ineff = new_ineff
+        else:
+            voter_labels[i] = 0
+            
+    greedy_bloc = np.where(voter_labels == 1)[0]
+    return ineff, greedy_bloc
+    
+    
+'''
 def max_group_representation(voter_positions, candidate_positions, 
                              voter_labels, winners, size = None):
     """
@@ -201,7 +287,7 @@ def max_group_representation(voter_positions, candidate_positions,
             alpha = g_alpha
             
     return alpha
-
+'''
 
 
 def borda_matrix(
