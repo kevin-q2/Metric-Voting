@@ -1,3 +1,10 @@
+# Peter Note IMPORTANT: All of these methods need to be tested in some way. If
+# you are not going to use VoteKit which has tests, you need to make sure that
+# these methods are spitting out the correct results. If you would like help
+# making the tests, you can refer to the ones that are in VoteKit and just copy
+# the appropriate ones over needed to test these methods.
+
+
 import numpy as np
 import pulp
 from .utils import remove_candidates, borda_matrix
@@ -8,11 +15,11 @@ def SNTV(profile, k):
     Elect k candidates with the largest plurality scores.
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
     first_choice_votes = profile[0, :]
     cands, counts = np.unique(first_choice_votes, return_counts=True)
@@ -25,11 +32,11 @@ def Bloc(profile, k):
     Elect k candidates with the largest k-approval scores.
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
     first_choice_votes = profile[:k, :]
     cands, counts = np.unique(first_choice_votes, return_counts=True)
@@ -43,16 +50,17 @@ def STV(profile, k):
     Uses the droop quota with fractional transfer, and breaks ties randomly.
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
     m, n = profile.shape
     if m < k:
         raise ValueError("Requested more elected seats than there are candidates!")
     droop = int((n / (k + 1)) + 1)
+
     elected_mask = np.zeros(m)
     eliminated_mask = np.zeros(m)
 
@@ -159,11 +167,11 @@ def Borda(profile, k):
     Elect k candidates with the largest Borda scores.
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
     m, n = profile.shape
     candidate_scores = np.zeros(m)
@@ -183,11 +191,11 @@ def SMRD(profile, k):
     From each dictator elect their first non-elected candidate.
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
     m, n = profile.shape
     if n < k:
@@ -217,11 +225,11 @@ def OMRD(profile, k):
     preferences.
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
     m, n = profile.shape
     dictator = np.random.choice(range(n))
@@ -237,12 +245,12 @@ def DMRD(profile, k, rho=1):
     a factor of rho.
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
-    rho (float): Reweighting factor
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
+        rho (float): Reweighting factor
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
     m, n = profile.shape
     voter_probability = np.ones(n) / n
@@ -285,13 +293,13 @@ def PRD(profile, k, p=None, q=None, rho=1):
     winner with RandomDictator. Remove that candidate from all preference profiles and repeat.
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
-    p (float, optional): probability of proportional to q's rule
-    q (float, optional): power in proportional to q's
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
+        p (float, optional): probability of proportional to q's rule
+        q (float, optional): power in proportional to q's
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
 
     m, n = profile.shape
@@ -342,11 +350,11 @@ def PluralityVeto(profile, k):
     lets voters veto candidates until there are only k left.
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
     m, n = profile.shape
     candidate_scores = np.zeros(m)
@@ -396,11 +404,11 @@ def ChamberlinCourant(profile, k):
     (where assignment scores are calculated with the borda score).
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
     m, n = profile.shape
     B = borda_matrix(profile)
@@ -444,11 +452,11 @@ def Monroe(profile, k):
     exactly floor(n/k) or ceiling(n/k) voters.
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
     m, n = profile.shape
     B = borda_matrix(profile)
@@ -495,11 +503,11 @@ def GreedyCC(profile, k):
     the candidate which increases the assignment scores the most.
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
     m, n = profile.shape
     B = borda_matrix(profile)
@@ -530,11 +538,11 @@ def ExpandingApprovals(profile, k):
     Kalayci, Kempe, Kher 2024). Please refer to their paper for a full description.
 
     Args:
-    profile (np.ndarray): (candidates x voters) Preference Profile.
-    k (int): Number of candidates to elect
+        profile (np.ndarray): (candidates x voters) Preference Profile.
+        k (int): Number of candidates to elect
 
     Returns:
-    elected (np.ndarray): Winning candidates
+        elected (np.ndarray): Winning candidates
     """
     m, n = profile.shape
     droop = np.ceil(n / k)

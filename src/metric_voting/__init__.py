@@ -3,7 +3,7 @@ from .election_sampling import (
     samples,
 )
 
-from .elections import SNTV
+from .elections import SNTV, Bloc
 
 from .spatial_generation import Spatial, GroupSpatial
 

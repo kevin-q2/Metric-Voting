@@ -42,6 +42,7 @@ class Spatial:
     """
 
     # Peter Note: CHECKED!
+    # Peter Note: Add type hints for the parameters
     def __init__(
         self,
         voter_dist=np.random.uniform,
@@ -97,6 +98,7 @@ class Spatial:
         self.distance = distance
 
     # Peter Note: CHECKED!
+    # Peter Note: Add type hints for the parameters
     def generate(self, n, m):
         """
         Samples a metric position for n voters from
@@ -131,6 +133,7 @@ class Spatial:
         return profile, candidate_positions, voter_positions, voter_labels
 
 
+# Peter Note: Missing description of the "voter_groups" and "candidate_groups" arguments
 class GroupSpatial:
     """
     Spatial model for ballot generation. In some metric space determined
@@ -174,6 +177,14 @@ class GroupSpatial:
             defaults to euclidean distance.
     """
 
+    # Peter Note: These really need type hints
+    # Peter Note: The variable names 'voter_params' and 'candidate_params' should probably be
+    # changed to 'voter_dist_params' and 'candidate_dist_params' to let the user know that they
+    # will be plugged into the distribution functions given there
+    #
+    # Peter Note: I would change 'voter_groups' and 'candidate_groups' to 'n_voter_groups' and
+    # 'n_candidate_groups' to make it clear that these are the number of groups and not the
+    # actual groupings.
     def __init__(
         self,
         voter_groups,
@@ -191,6 +202,8 @@ class GroupSpatial:
         if voter_dists is None:
             self.voter_dists = [np.random.uniform] * voter_groups
         else:
+            # Peter Note: Check to make sure that the voter distribution callables have the
+            # correct signature
             if len(voter_dists) != voter_groups:
                 raise ValueError(
                     "Group size does not match with given voter distributions"
@@ -201,6 +214,8 @@ class GroupSpatial:
         if candidate_dists is None:
             self.candidate_dists = [np.random.uniform] * candidate_groups
         else:
+            # Peter Note: Check to make sure that the candidate distribution callables have the
+            # correct signature
             if len(candidate_dists) != candidate_groups:
                 raise ValueError(
                     "Group size does not match with given candidate distributions"
@@ -212,17 +227,20 @@ class GroupSpatial:
             self.voter_params = [{} for _ in range(voter_groups)]
             for i, dist in enumerate(self.voter_dists):
                 if dist is np.random.uniform:
-                    self.voter_params[i] = {"low": 0.0, "high": 1.0, "size": 2.0}
+                    self.voter_params[i] = {"low": 0.0, "high": 1.0, "size": 2}
                 else:
                     raise ValueError(
                         "No parameters were given for the input voter distribution."
                     )
+                # Peter Note: Check to make sure that the kwargs are valid params for the
+                # callables used in the distribution function
         else:
             for i, dist in enumerate(self.voter_dists):
                 try:
                     dist(**voter_params[i])
                 except TypeError:
                     raise TypeError("Invalid parameters for the voter distribution.")
+                    # Peter Note: Maybe tell the user what method failed?
 
             self.voter_params = voter_params
 
@@ -230,17 +248,20 @@ class GroupSpatial:
             self.candidate_params = [{} for _ in range(candidate_groups)]
             for i, dist in enumerate(self.candidate_dists):
                 if dist is np.random.uniform:
-                    self.candidate_params[i] = {"low": 0.0, "high": 1.0, "size": 2.0}
+                    self.candidate_params[i] = {"low": 0.0, "high": 1.0, "size": 2}
                 else:
                     raise ValueError(
                         "No parameters were given for the input voter distribution."
                     )
+                # Peter Note: Check to make sure that the kwargs are valid params for the
+                # callables used in the distribution function
         else:
             for i, dist in enumerate(self.candidate_dists):
                 try:
                     dist(**candidate_params[i])
                 except TypeError:
                     raise TypeError("Invalid parameters for the voter distribution.")
+                    # Peter Note: Maybe tell the user what method failed?
 
             self.candidate_params = candidate_params
 
@@ -248,6 +269,7 @@ class GroupSpatial:
             v = self.voter_dists[0](**self.voter_params[0])
             c = self.candidate_dists[0](**self.candidate_params[0])
             distance(v, c)
+            # Peter Note: If you are going to check this, you need to check all of them.
         except TypeError:
             raise ValueError(
                 "Distance function is invalid or incompatible "
@@ -256,6 +278,8 @@ class GroupSpatial:
 
         self.distance = distance
 
+    # Peter Note: The names of the parameters and the parameters that have been documented are different
+    # Peter Note: These variable names are actually confusing.
     def generate(self, n, m, voter_size_dist, candidate_size_dist, exact=True):
         """
         Samples a metric position for n voters from
@@ -300,10 +324,6 @@ class GroupSpatial:
             candidate_sizes = [
                 np.sum(candidate_groups == i) for i in range(self.candidate_groups)
             ]
-
-        # candidate_positions = np.array(
-        #    [self.candidate_dist(**self.candidate_params) for c in range(self.m)]
-        # )
 
         candidate_positions = [
             [

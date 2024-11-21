@@ -7,6 +7,10 @@ readme = "README.md"
 
 
 [tool.poetry.dependencies]
-python = "^3.9, <3.13"
+python = "^3.10, <3.13"
 pulp = "^2.9.0"
 numpy = "^2.1.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+
