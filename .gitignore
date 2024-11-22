@@ -163,8 +163,8 @@ cython_debug/
 
 
 # Files
-code/votekit_election_sampling.py
-figures/older/
+figures/*
+figures/older
 *.sh
 *.txt
 
