@@ -1,6 +1,3 @@
-# Peter Note: Change the 'dists' to 'distances' so that it is not
-# confused with 'distributions'
-
 import numpy as np
 from numpy.typing import NDArray
 from typing import Callable, Tuple, Any, Optional, Union
@@ -70,73 +67,77 @@ def euclidean_cost_array(
     return dists
 
 
-def cost(dists: NDArray) -> float:
+def cost(cst_array: NDArray) -> float:
     """
     Given an (m x n) cost array storing all distances from each voter to
     each candidate, finds the total cost by summing all entries.
 
     Args:
-        dists (np.ndarray): (m x n) Array of distances from candidates to voters.
+        cst_array (np.ndarray): (m x n) Array of costs with 
+            each entry i,j computed as the distance from candidate i to voter j. 
 
     Returns:
         float: Sum of distances (cost).
     """
-    return np.sum(dists)
+    return np.sum(cst_array)
 
 
-def candidate_costs(dists: NDArray) -> NDArray:
+def candidate_costs(cst_array: NDArray) -> NDArray:
     """
     Given an (m x n) cost array storing all distances from each voter to
     each candidate, finds the total cost for each candidate
     summed along all voters.
 
     Args:
-        dists (np.ndarray): (m x n) Array of distances from candidates to voters.
+        cst_array (np.ndarray): (m x n) Array of costs with 
+            each entry i,j computed as the distance from candidate i to voter j. 
 
     Returns:
-        (np.ndarray): Length m array of candidate distances.
+        (np.ndarray): Length m array of distance sums for candidates.
     """
-    candidate_dists = np.sum(dists, axis=1)
-    return candidate_dists
+    candidate_csts = np.sum(cst_array, axis=1)
+    return candidate_csts
 
 
-def voter_costs(dists: NDArray) -> NDArray:
+def voter_costs(cst_array: NDArray) -> NDArray:
     """
     Given an (m x n) cost array storing all distances from each voter to
-    each candidate, finds the total cost for each candidate
-    summed along all voters.
+    each candidate, finds the total cost for each voter
+    summed across all candidates.
 
     Args:
-        dists (np.ndarray): (m x n) Array of distances from candidates to voters.
+        cst_array (np.ndarray): (m x n) Array of costs with 
+            each entry i,j computed as the distance from candidate i to voter j. 
 
     Returns:
-        (np.ndarray): Array of distances from candidates to voters.
+        (np.ndarray): Length n array of distance sums for voters.
     """
-    voter_dists = np.sum(dists, axis=0)
-    return voter_dists
+    voter_csts = np.sum(cst_array, axis=0)
+    return voter_csts
 
 
-def proportional_assignment_cost(dists: NDArray, size: int) -> float:
+def proportional_assignment_cost(cst_array: NDArray, size: int) -> float:
     """
-    Find the cost of voters to some best subset of candidates
-    with a given size.
+    Given voters and candidates in an input cost array, finds the lowest cost 
+    assignment of voters to a subset of candidates with a given size. 
 
     Args:
-        dists (np.ndarray): (m x n) Array of distances from candidates to voters.
-        size (int): Size required for the best group / subset of candidates.
+        cst_array (np.ndarray): (m x n) Array of costs with 
+            each entry i,j computed as the distance from candidate i to voter j. 
+        size (int): Size required for the selected subset of candidates.
 
     Returns:
         float: Sum of distances (cost).
     """
-    if size > len(dists):
+    if size > len(cst_array):
         raise ValueError("Requested size is too large!")
 
-    candidate_dists = candidate_costs(dists)
-    return np.sum(np.sort(candidate_dists)[:size])
+    candidate_csts = candidate_costs(cst_array)
+    return np.sum(np.sort(candidate_csts)[:size])
 
 
 def group_inefficiency(
-    dists: NDArray, 
+    cst_array: NDArray, 
     winner_indices: NDArray, 
     voter_labels: NDArray, 
     bloc_label: int, 
@@ -150,11 +151,12 @@ def group_inefficiency(
             the size parameter to enforce that voters are represented by a constant size set.
 
     Args:
-        dists (np.ndarray): (m x n) Array of distances from candiates to voters.
+        cst_array (np.ndarray): (m x n) Array of costs with 
+            each entry i,j computed as the distance from candidate i to voter j. 
         winner_indices (np.ndarray[int]): Length k array of winning candidate indices.
         voter_labels (np.ndarray[int]): Integer array where index i gives
-                                        the group membership of voter i.
-        bloc_label (int): Bloc label to compute score for.
+                                        the bloc label of voter i.
+        bloc_label (int): Selected bloc label to compute score for.
         size (int, optional): Pre-defined constant size of the representative set
             for input voters. Defaults to None, in which case size is computed
             proportional to the size of the input set of voters *In most cases
@@ -163,7 +165,7 @@ def group_inefficiency(
     Returns:
         float: Group inefficiency score.
     """
-    _, n = dists.shape
+    _, n = cst_array.shape
     k = len(winner_indices)
 
     if size is None:
@@ -172,7 +174,7 @@ def group_inefficiency(
         size = int(bloc_size / n * k)
 
     if size != 0:
-        bloc_dists = dists[:, voter_labels == bloc_label]
+        bloc_dists = cst_array[:, voter_labels == bloc_label]
         cost1 = proportional_assignment_cost(bloc_dists[winner_indices, :], size)
         cost2 = proportional_assignment_cost(bloc_dists, size)
         return cost1 / cost2
@@ -290,42 +292,6 @@ def random_greedy_group_inefficiency(cost_arr, winner_indices, size=None):
     return ineff, greedy_bloc
 
 
-'''
-def max_group_representation(voter_positions, candidate_positions, 
-                             voter_labels, winners, size = None):
-    """
-    Computes the maximum group inefficiency score among all known groups.
-
-    Optional: Instead of using proportionally sized representative sets, set
-            size = k to enforce that voters are represented by a constant size k set.
-
-    Args:
-        voter_positions (np.ndarray): (n x d) Array of voter positions in a metric space.
-        candidate_positions (np.ndarray): (m x d) Array of candidate positions in a metric space.
-        voter_labels (np.ndarray[int]): Integer array where index i gives
-                                        the group membership of voter i.
-        winners (np.ndarray): (k x d) Array of winning candidate positions.
-        group_label (int): Group label to compute score for.
-        size (int, optional): Pre-defined constant size of the representative set
-            for input voters. Defaults to None, in which case size is computed
-            proportional to the size of the input set of voters *In most cases
-            we'll default to this!*.
-
-    Returns:
-        float: Maximum group inefficiency score.
-    """
-    group_labels = np.unique(voter_labels)
-    alpha = 0
-    for g in group_labels:
-        g_alpha = group_representation(
-            voter_positions, candidate_positions, voter_labels, winners, g, size
-        )
-        if g_alpha > alpha:
-            alpha = g_alpha
-
-    return alpha
-'''
-
 
 def borda_matrix(
     profile: NDArray, scoring_scheme: Callable[[int, int], float] = lambda x, y: x - y
@@ -366,8 +332,44 @@ def remove_candidates(profile: NDArray, candidates: Union[list, NDArray]) -> NDA
     return np.array([row[~np.isin(row, candidates)] for row in profile.T]).T
 
 
-# WIP
-# Peter did not check this
+
+'''
+A bit of older code that may be useful later...
+
+def max_group_representation(voter_positions, candidate_positions, 
+                             voter_labels, winners, size = None):
+    """
+    Computes the maximum group inefficiency score among all known groups.
+
+    Optional: Instead of using proportionally sized representative sets, set
+            size = k to enforce that voters are represented by a constant size k set.
+
+    Args:
+        voter_positions (np.ndarray): (n x d) Array of voter positions in a metric space.
+        candidate_positions (np.ndarray): (m x d) Array of candidate positions in a metric space.
+        voter_labels (np.ndarray[int]): Integer array where index i gives
+                                        the group membership of voter i.
+        winners (np.ndarray): (k x d) Array of winning candidate positions.
+        group_label (int): Group label to compute score for.
+        size (int, optional): Pre-defined constant size of the representative set
+            for input voters. Defaults to None, in which case size is computed
+            proportional to the size of the input set of voters *In most cases
+            we'll default to this!*.
+
+    Returns:
+        float: Maximum group inefficiency score.
+    """
+    group_labels = np.unique(voter_labels)
+    alpha = 0
+    for g in group_labels:
+        g_alpha = group_representation(
+            voter_positions, candidate_positions, voter_labels, winners, g, size
+        )
+        if g_alpha > alpha:
+            alpha = g_alpha
+
+    return alpha
+
 def qmin_cost(voter_positions, winner_positions, q):
     """
     Sum of distances from every voter to their qth closest candidate from the
@@ -386,11 +388,9 @@ def qmin_cost(voter_positions, winner_positions, q):
     distance_sort = np.sort(distances, axis=0)
     return np.sum(distance_sort[q, :])
 
-
-"""
 # Another notion of cost I was experimenting with:
 def worst_group_cost(voter_positions, candidate_positions, size, k):
     cost_array = costs(voter_positions, candidate_positions)
     worst_cands = np.argsort(cost_array)[::-1][k-size:k]
     return np.sum(cost_array[worst_cands])
-"""
+'''
