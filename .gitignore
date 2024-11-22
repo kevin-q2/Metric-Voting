@@ -165,6 +165,9 @@ cython_debug/
 # Files
 figures/*
 figures/older
+data/*
+! data/2bloc.npz
+! data/4bloc.npz
 *.sh
 *.txt
 
