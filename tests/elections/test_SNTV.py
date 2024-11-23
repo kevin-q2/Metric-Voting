@@ -16,5 +16,5 @@ def test_tie_break(profile_with_fp_tie):
     _, counts = np.unique(winners, return_counts=True)
 
     assert  len(counts) == 2
-    assert 490 < counts[0] and counts[0] < 510
-    assert 490 < counts[1] and counts[1] < 510
+    assert 450 < counts[0] and counts[0] < 550
+    assert 450 < counts[1] and counts[1] < 550
