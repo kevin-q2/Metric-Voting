@@ -332,6 +332,49 @@ def remove_candidates(profile: NDArray, candidates: Union[list, NDArray]) -> NDA
     return np.array([row[~np.isin(row, candidates)] for row in profile.T]).T
 
 
+def is_complete_ranking(ranking: NDArray) -> bool:
+    """
+    Checks if the input ranking is a complete ranking of the same m candidates.
+
+    Args:
+        ranking (np.ndarray): (m) Array of candidate indices.
+
+    Returns:
+        (bool): True if the ranking is complete, False otherwise.
+    """
+    return np.all(np.isin(np.arange(len(ranking)), np.unique(ranking)))
+
+
+def approve_profile(profile: NDArray) -> bool:
+    """
+    Checks if the input profile is an ranked preference profile in 
+    correct form. Specifically, for our simplified models, this means 
+    a complete ranking of the same m candidates for each voter. 
+
+    Args:
+        profile (np.ndarray): (candidates x voters) Preference profile matrix.
+
+    Returns:
+        (bool): True if the profile is approved, False otherwise.
+    """
+    return np.all(np.apply_along_axis(is_complete_ranking, axis = 0, arr = profile))
+
+
+def uniform_profile(n: int, m: int) -> NDArray:
+    """
+    Generates a uniform profile with m candidates and n voters, where each voter
+    ranks the candidates in a random order.
+
+    Args:
+        n (int): Number of voters.
+        m (int): Number of candidates.
+
+    Returns:
+        (np.ndarray): Generated preference profile.
+    """
+    return np.array([np.random.permutation(m) for _ in range(n)]).T
+
+
 
 '''
 A bit of older code that may be useful later...

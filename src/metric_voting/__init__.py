@@ -8,6 +8,7 @@ from .elections import (
     Bloc,
     Borda,
     STV,
+    STV2,
     ChamberlinCourant,
     Monroe,
     GreedyCC,
@@ -33,5 +34,8 @@ from .utils import (
     greedy_group_inefficiency,
     random_greedy_group_inefficiency,
     borda_matrix,
-    remove_candidates
+    remove_candidates,
+    is_complete_ranking,
+    approve_profile,
+    uniform_profile,
 )

@@ -7,8 +7,9 @@
 
 import numpy as np
 from numpy.typing import NDArray
+from typing import Callable, Dict, Tuple, Any, List, Optional, Union
 import pulp
-from .utils import remove_candidates, borda_matrix
+from .utils import approve_profile, remove_candidates, borda_matrix
 
 
 def SNTV(profile: NDArray, k: int) -> NDArray:
@@ -22,13 +23,22 @@ def SNTV(profile: NDArray, k: int) -> NDArray:
     Returns:
         elected (np.ndarray): Winning candidates
     """
+    if not approve_profile(profile):
+        raise ValueError("Profile not in correct form.")
+    
     first_choice_votes = profile[0, :]
     cands, counts = np.unique(first_choice_votes, return_counts=True)
+    
+    # break ties randomly with noise
+    counts = counts.astype(float)
+    counts += np.random.uniform(0, 1, len(counts))
+    
+    # NOTE: Should this elect random candidates if it can't find k winners??
     elected = cands[np.argsort(counts)[::-1][: min(k, len(cands))]]
     return elected
 
 
-def Bloc(profile, k):
+def Bloc(profile : NDArray, k : int) -> NDArray:
     """
     Elect k candidates with the largest k-approval scores.
 
@@ -39,128 +49,272 @@ def Bloc(profile, k):
     Returns:
         elected (np.ndarray): Winning candidates
     """
+    if not approve_profile(profile):
+        raise ValueError("Profile not in correct form.")
+    
     first_choice_votes = profile[:k, :]
     cands, counts = np.unique(first_choice_votes, return_counts=True)
+    
+    # break ties randomly with noise
+    counts = counts.astype(float)
+    counts += np.random.uniform(0, 1, len(counts))
+    
+    # NOTE: Should this elect random candidates if it can't find k winners??
     elected = cands[np.argsort(counts)[::-1][: min(k, len(cands))]]
     return elected
 
 
-def STV(profile, k):
+
+class STV:
     """
     Elect k candidates with the Single Transferrable Vote election.
-    Uses the droop quota with fractional transfer, and breaks ties randomly.
+    Uses the droop quota as an election threshold, and breaks ties randomly.
+    To transfer votes, one may select either 'fractional', 'weighted-fractional',
+    or 'cambridge' transfer types. The 'fractional' type transfers an 
+    equivalent fraction of surplus votes back to voters. The 
+    'weighted-fractional' type transfers a fraction of surplus votes back
+    to voters proportional to their original vote weight. The 'cambridge'
+    type transfers whole surplus votes to a random set of voters who voted for the
+    elected candidate.
 
     Args:
-        profile (np.ndarray): (candidates x voters) Preference Profile.
-        k (int): Number of candidates to elect
+        transfer_type (str): Type of vote transfer. 
+            Options: 'fractional', 'weighted-fractional', 'cambridge.'
 
-    Returns:
-        elected (np.ndarray): Winning candidates
+    Attributes:
+        transfer_type (str): Type of vote transfer.
+        verbose (bool): Print election details.
+        m (int): Number of candidates.
+        n (int): Number of voters.
+        droop (int): Droop quota.
+        elected_mask (NDArray): Tracks elected candidates.
+        eliminated_mask (NDArray): Tracks eliminated candidates.
+        voter_indices (NDArray): Tracks voter's next available choices.
+        voter_weights (NDArray): Weights for each voter's votes.
+        elected_count (int): Number of candidates currently elected.
+        eliminated_count (int): Number of candidates currently eliminated.
     """
-    m, n = profile.shape
-    if m < k:
-        raise ValueError("Requested more elected seats than there are candidates!")
-    droop = int((n / (k + 1)) + 1)
+    
+    def __init__(self, transfer_type : str = 'fractional', verbose : bool = False):
+        self.transfer_type = transfer_type
+        self.verbose = verbose
+        self.m = None
+        self.n = None
+        self.droop = None
+        self.elected_mask = None
+        self.eliminated_mask = None
+        self.voter_indices = None
+        self.voter_weights = None
+        self.elected_count = None
+        self.eliminated_count = None
+        
+    
+    def __call__(self, profile : NDArray, k : int) -> NDArray: 
+        """
+        Elect k candidates with the Single Transferrable Vote election.
+        
+        Args:
+            profile (NDArray): (m x n) Preference Profile.
+            k (int): Number of candidates to elect
+            
+        Returns:
+            elected (NDArray): Winning candidates
+        """
+        self.profile = profile
+        self.k = k
+        self.m, self.n = profile.shape
+        if self.m < k:
+            raise ValueError("Requested more elected seats than there are candidates!")
+        
+        # Initialize tracking variables
+        self.droop = int((self.n / (self.k + 1))) + 1
+        self.elected_mask = np.zeros(self.m)
+        self.eliminated_mask = np.zeros(self.m)
+        self.voter_indices = np.zeros(self.n, dtype=int)
+        self.voter_weights = np.ones(self.n)
+        self.elected_count = 0
+        self.eliminated_count = 0
+        
+        # Main election loop
+        if self.verbose:
+            print('Starting Election: ')
+            
+        while self.elected_count < self.k and self.eliminated_count < self.m - self.k:
+            candidate_scores, candidate_voters, satisfies_quota = self.count()
+            
+            if self.verbose:
+                print("Round: " + str(self.elected_count + self.eliminated_count))
+                print("voter weights: " + str(self.voter_weights))
+                print("voter indices: " + str(self.voter_indices))
+                print("scores: " + str(candidate_scores))
+            
+            if len(satisfies_quota) > 0:
+                self.elect(satisfies_quota)
+                elected = satisfies_quota
+                for c in elected:
+                    self.transfer(candidate_voters[c])
+                    
+                if self.verbose:
+                    print("elected: " + str(elected))
+                
+            else:
+                elim = self.eliminate(candidate_scores)
+                self.transfer(candidate_voters[elim])
+                
+                if self.verbose:
+                    print("eliminated: " + str(elim))
+            
+            if self.verbose:  
+                print()
+                
+        # Final check: Elect any remaining candidates if needed
+        if self.elected_count < self.k:
+            remaining_candidates = (np.where((self.elected_mask == 0) 
+                                             & (self.eliminated_mask == 0))[0])
+            self.elected_mask[remaining_candidates] = 1
+            self.elected_count += len(remaining_candidates)
+            
+        return np.where(self.elected_mask == 1)[0]
+                    
+                
+    def count(self) -> Tuple[NDArray, Dict[int, List[int]], NDArray]:
+        """
+        Count votes in the current round and determine if any 
+        candidates satisfy the droop quota.
+        
+        Returns:
+            candidate_scores (NDArray): Length m array containing the 
+                number of votes for each candidate.
+            candidate_voters (dict): Dictionary with candidate indices as keys
+                and lists of their voters as values.
+            satisfies_quota (NDArray): Array of candidate indices that
+                satisfy the droop quota.
+        """
+        candidate_scores = np.zeros(self.m)
+        candidate_voters = {c: [] for c in range(self.m)}
+        for i in range(self.n):
+            if self.voter_indices[i] != -1:
+                voter_choice = self.profile[self.voter_indices[i], i]
+                
+                if self.voter_weights[i] > 0:
+                    candidate_scores[voter_choice] += self.voter_weights[i]
+                    candidate_voters[voter_choice].append(i)
 
-    elected_mask = np.zeros(m)
-    eliminated_mask = np.zeros(m)
-
-    # Keeps track of voter's 'position' on the preference profile.
-    voter_indices = np.zeros(n, dtype=int)
-    # Keeps track of surplus votes to be added over.
-    surplus = np.ones(n)
-
-    elected_count = 0
-    eliminated_count = 0
-    while elected_count < k and eliminated_count < m - k:
-        # Count Plurality Scores:
-        candidate_scores = np.zeros(m)
-        candidate_voters = {c: [] for c in range(m)}
-        for i in range(n):
-            # if ballot not exhausted, add voter's surplus to their next preferred candidate
-            if voter_indices[i] != -1:
-                voter_choice = profile[voter_indices[i], i]
-                candidate_scores[voter_choice] += surplus[i]
-                candidate_voters[voter_choice].append(i)
-
-        # Check for candidates that satisfy droop score and are still in the race:
-        satisfies = np.where(
-            (candidate_scores >= droop) & (elected_mask != 1) & (eliminated_mask != 1)
+        satisfies_quota = np.where(
+        (candidate_scores >= self.droop) & (self.elected_mask != 1) & (self.eliminated_mask != 1)
         )[0]
+        
+        return candidate_scores, candidate_voters, satisfies_quota
+    
+    
+    def elect(self, satisfies_quota : NDArray):
+        """
+        Elect all candidates that satisfy the droop quota.
+        
+        Args:
+            satisfies_quota (NDArray): Array of candidate indices that
+                satisfy the droop quota.
+        """    
+        self.elected_mask[satisfies_quota] = 1
+        self.elected_count += len(satisfies_quota)
+            
+            
+    def eliminate(self, candidate_scores : NDArray) -> int:
+        """
+        Eliminate the candidate with the lowest score, breaking 
+        ties randomly.
+        
+        Args:
+            candidate_scores (NDArray): Length m array containing the 
+                number of votes for each candidate.
+                
+        Returns:
+            eliminated (int): Index of the eliminated candidate.
+        """
+        
+        random_tiebreakers = np.random.rand(self.m)
+        structured_array = np.core.records.fromarrays(
+            [candidate_scores, random_tiebreakers], names="scores,rand"
+        )
+        score_sort = np.argsort(structured_array, order=["scores", "rand"])
+        
+        eliminated = None
+        for e in score_sort:
+            if (self.elected_mask[e] == 0) and (self.eliminated_mask[e] == 0):
+                self.eliminated_mask[e] = 1
+                self.eliminated_count += 1
+                eliminated = e
 
-        # If there are such candidates, elect them.
-        if len(satisfies) > 0:
-            # Break ties randomly.
-            np.random.shuffle(satisfies)
+                # only eliminate one candidate per round
+                break
+            
+        return eliminated
+    
+    
+    def transfer(self, candidate_voters : List[int]):
+        """
+        Transfer votes from an elected candidate to the next available
+        candidate on each voter's ballot. Unless there the ballot 
+        has been exhausted, in which case the voter is removed 
+        from any further voting process. 
+        
+        Args:
+            candidate_voters (List[int]): List of voter indices for 
+                voters who voted for the candidate to transfer from.
+        """
+        total_votes = np.sum(self.voter_weights[candidate_voters])
+        surplus_votes = total_votes - self.droop
+        
+        if surplus_votes >= 0:
+            if self.transfer_type == 'fractional':
+                self.voter_weights[candidate_voters] = (
+                    (surplus_votes / total_votes)
+                )
+                
+            elif self.transfer_type == 'weighted-fractional':
+                weights_normalized = (
+                    self.voter_weights[candidate_voters] / total_votes
+                    )
+                self.voter_weights[candidate_voters] = (
+                    weights_normalized * surplus_votes
+                )
+                
+            elif self.transfer_type == 'cambridge':
+                # NOTE: I think this should work if all voter's weight values are always 1.
+                quota_voters = np.random.choice(candidate_voters, 
+                                                size = self.droop, 
+                                                replace = False)
+                self.voter_weights[quota_voters] = 0
+                
+            else:
+                raise ValueError("Invalid transfer type.")
+            
+        
+        self.adjust_indices(candidate_voters)
+        
+        
+    def adjust_indices(self, candidate_voters : List[int]):
+        """
+        Adjust voter indices to the next available candidate on their ballot.
+        If a voter's ballot has been exhausted, remove them from any further
+        voting process by setting their voter index to -1.
+        
+        Args:
+            candidate_voters (List[int]): List of voter indices for 
+                voters who voted for the candidate to transfer from.
+        """
+        for v in candidate_voters:
+            while self.voter_indices[v] != -1 and (
+                (self.elected_mask[self.profile[self.voter_indices[v], v]] == 1)
+                or (self.eliminated_mask[self.profile[self.voter_indices[v], v]] == 1)
+            ):
+                self.voter_indices[v] += 1
 
-            # Elect
-            last_elected = []
-            for c in satisfies:
-                if elected_count < k:
-                    elected_mask[c] = 1
-                    last_elected.append(c)
-                    elected_count += 1
-
-            # Adjust surplus and indices
-            for c in last_elected:
-                c_voters = candidate_voters[c]
-                total_votes = np.sum(surplus[c_voters])
-                surplus_votes = total_votes - droop
-                surplus[c_voters] = (
-                    surplus_votes / total_votes
-                )  # This is where I'm not sure the transfer is correct...
-
-                # move voter's surplus to their next preferred candidate
-                for v in c_voters:
-                    while voter_indices[v] != -1 and (
-                        (elected_mask[profile[voter_indices[v], v]] == 1)
-                        or (eliminated_mask[profile[voter_indices[v], v]] == 1)
-                    ):
-                        voter_indices[v] += 1
-
-                        # ballot fully exhausted
-                        if voter_indices[v] >= m:
-                            voter_indices[v] = -1
-                            break
-
-        # Otherwise, delete the candidate with the lowest plurality score.
-        else:
-            # Again breaking ties randomly
-            random_tiebreakers = np.random.rand(m)
-            structured_array = np.core.records.fromarrays(
-                [candidate_scores, random_tiebreakers], names="scores,rand"
-            )
-            score_sort = np.argsort(structured_array, order=["scores", "rand"])
-            for e in score_sort:
-                if (elected_mask[e] == 0) and (eliminated_mask[e] == 0):
-                    eliminated_mask[e] = 1
-                    eliminated_count += 1
-                    e_voters = candidate_voters[e]
-
-                    # move voter's surplus to their next preferred candidate
-                    for v in e_voters:
-                        while voter_indices[v] != -1 and (
-                            (elected_mask[profile[voter_indices[v], v]] == 1)
-                            or (eliminated_mask[profile[voter_indices[v], v]] == 1)
-                        ):
-                            voter_indices[v] += 1
-
-                            # ballot fully exhausted
-                            if voter_indices[v] >= m:
-                                voter_indices[v] = -1
-                                break
-
-                    # only eliminate one candidate per round
+                # ballot fully exhausted
+                if self.voter_indices[v] >= self.m:
+                    self.voter_indices[v] = -1
                     break
-
-    # Final check: Elect any remaining candidates if needed
-    remaining_candidates = np.where((elected_mask == 0) & (eliminated_mask == 0))[0]
-    if elected_count < k:
-        for c in remaining_candidates:
-            if elected_count < k:
-                elected_mask[c] = 1
-                elected_count += 1
-    return np.where(elected_mask == 1)[0]
+ 
 
 
 # Peter Note: Add borda_fn like we did for Borda matrix
@@ -175,6 +329,9 @@ def Borda(profile, k):
     Returns:
         elected (np.ndarray): Winning candidates
     """
+    if not approve_profile(profile):
+        raise ValueError("Profile not in correct form.")
+    
     m, n = profile.shape
     candidate_scores = np.zeros(m)
 
@@ -201,6 +358,9 @@ def ChamberlinCourant(profile, k):
     Returns:
         elected (np.ndarray): Winning candidates
     """
+    if not approve_profile(profile):
+        raise ValueError("Profile not in correct form.")
+    
     m, n = profile.shape
     B = borda_matrix(profile).T  # n x m matrix after transpose
 
@@ -249,6 +409,9 @@ def Monroe(profile, k):
     Returns:
         elected (np.ndarray): Winning candidates
     """
+    if not approve_profile(profile):
+        raise ValueError("Profile not in correct form.")
+    
     m, n = profile.shape
     B = borda_matrix(profile).T  # n x m matrix after transpose
 
@@ -300,6 +463,9 @@ def GreedyCC(profile, k):
     Returns:
         elected (np.ndarray): Winning candidates
     """
+    if not approve_profile(profile):
+        raise ValueError("Profile not in correct form.")
+    
     m, n = profile.shape
     B = borda_matrix(profile)
 
@@ -336,6 +502,9 @@ def PluralityVeto(profile, k):
     Returns:
         elected (np.ndarray): Winning candidates
     """
+    if not approve_profile(profile):
+        raise ValueError("Profile not in correct form.")
+    
     m, n = profile.shape
     candidate_scores = np.zeros(m)
     eliminated = np.zeros(m - k) - 1
@@ -390,6 +559,9 @@ def ExpandingApprovals(profile, k):
     Returns:
         elected (np.ndarray): Winning candidates
     """
+    if not approve_profile(profile):
+        raise ValueError("Profile not in correct form.")
+    
     m, n = profile.shape
     droop = np.ceil(n / k)
     uncovered_mask = np.ones(n, dtype=bool)
@@ -432,6 +604,9 @@ def SMRD(profile, k):
     Returns:
         elected (np.ndarray): Winning candidates
     """
+    if not approve_profile(profile):
+        raise ValueError("Profile not in correct form.")
+    
     m, n = profile.shape
     if n < k:
         raise ValueError("Assumes n >= k")
@@ -465,6 +640,9 @@ def OMRD(profile, k):
     Returns:
         elected (np.ndarray): Winning candidates
     """
+    if not approve_profile(profile):
+        raise ValueError("Profile not in correct form.")
+    
     m, n = profile.shape
     dictator = np.random.choice(range(n))
     elected = profile[:k, dictator]
@@ -486,6 +664,9 @@ def DMRD(profile, k, rho=1):
     Returns:
         elected (np.ndarray): Winning candidates
     """
+    if not approve_profile(profile):
+        raise ValueError("Profile not in correct form.")
+    
     m, n = profile.shape
     voter_probability = np.ones(n) / n
     voter_indices = np.zeros(n, dtype=int)
@@ -535,6 +716,8 @@ def PRD(profile, k, p=None, q=None):
     Returns:
         elected (np.ndarray): Winning candidates
     """
+    if not approve_profile(profile):
+        raise ValueError("Profile not in correct form.")
 
     m, n = profile.shape
 
