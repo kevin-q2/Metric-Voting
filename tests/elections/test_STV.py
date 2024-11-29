@@ -119,8 +119,11 @@ def test_fractional_with_votekit():
     prof = uniform_profile(n, m)
     ballots = [Ballot(ranking = [{str(j)} for j in prof[:,i]], weight = 1) for i in range(n)]
     votekit_prof = PreferenceProfile(ballots= ballots)
-    agree = 0 
-    for _ in range(100):
+    
+    samples = 1000
+    winner_record = np.zeros((samples, k))
+    votekit_winner_record = np.zeros((samples, k))
+    for i in range(samples):
         winners = STV(transfer_type = 'fractional')(prof, k)
         
         election = votekit_STV(votekit_prof, k, transfer = fractional_transfer)
@@ -128,10 +131,60 @@ def test_fractional_with_votekit():
         votekit_winners = [int(winner) for winner_set in
                             votekit_winners for winner in list(winner_set)]
         
-        if set(winners) == set(votekit_winners):
-            agree += 1
-            
-    assert agree > 50
+        winner_record[i,:] = winners
+        votekit_winner_record[i,:] = votekit_winners
+        
+    winner_dist = np.zeros(m)
+    valz,counts = np.unique(winner_record, return_counts = True)
+    for i,u in enumerate(valz):
+        winner_dist[int(u)] += counts[i]
+    winner_dist /= samples
+    
+    votekit_winner_dist = np.zeros(m)
+    valz,counts = np.unique(votekit_winner_record, return_counts = True)
+    for i,u in enumerate(valz):
+        votekit_winner_dist[int(u)] += counts[i]
+    votekit_winner_dist /= samples
+    
+    tv_distance = np.sum(np.abs(winner_dist - votekit_winner_dist))
+    assert tv_distance < 0.1
 
+
+def test_cambridge_with_votekit():
+    n = 20
+    m = 10
+    k = 5
+    prof = uniform_profile(n, m)
+    ballots = [Ballot(ranking = [{str(j)} for j in prof[:,i]], weight = 1) for i in range(n)]
+    votekit_prof = PreferenceProfile(ballots= ballots)
+    
+    samples = 1000
+    winner_record = np.zeros((samples, k))
+    votekit_winner_record = np.zeros((samples, k))
+    for i in range(samples):
+        winners = STV(transfer_type = 'cambridge')(prof, k)
+        
+        election = votekit_STV(votekit_prof, k, transfer = random_transfer)
+        votekit_winners = election.get_elected()
+        votekit_winners = [int(winner) for winner_set in
+                            votekit_winners for winner in list(winner_set)]
+        
+        winner_record[i,:] = winners
+        votekit_winner_record[i,:] = votekit_winners
+        
+    winner_dist = np.zeros(m)
+    val,counts = np.unique(winner_record, return_counts = True)
+    for i,u in enumerate(val):
+        winner_dist[int(u)] += counts[i]
+    winner_dist /= samples
+    
+    votekit_winner_dist = np.zeros(m)
+    val,counts = np.unique(votekit_winner_record, return_counts = True)
+    for i,u in enumerate(val):
+        votekit_winner_dist[int(u)] += counts[i]
+    votekit_winner_dist /= samples
+    
+    tv_distance = np.sum(np.abs(winner_dist - votekit_winner_dist))
+    assert tv_distance < 0.1
     
     

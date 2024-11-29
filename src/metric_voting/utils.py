@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from numpy.typing import NDArray
 from typing import Callable, Tuple, Any, Optional, Union
 
@@ -184,27 +185,63 @@ def group_inefficiency(
 
 # WIP
 def generate_uniform_random_voter_bloc(n, k):
-    min_size = int((n / k) + 1)
+    min_size = int(np.ceil(n / k))
     bloc_size = np.random.randint(min_size, n + 1)
     random_bloc = np.random.choice(n, bloc_size, replace=False)
     voter_labels = np.zeros(n)
     voter_labels[random_bloc] = 1
-    return random_bloc, voter_labels 
+    return random_bloc, voter_labels
+
+
+def generate_weighted_random_voter_bloc(n, k, t, weights):
+    min_size = math.ceil(n * t / k)
+    max_size = math.ceil(n * (t + 1) / k) - 1
+    bloc_size = np.random.randint(min_size, max_size)
+    random_bloc = np.random.choice(n, bloc_size, replace=False, p = weights)
+    voter_labels = np.zeros(n)
+    voter_labels[random_bloc] = 1
+    return random_bloc, voter_labels
+
 
 
 def random_group_inefficiency(
-    dists: NDArray, 
+    cost_arr: NDArray, 
     winner_indices: NDArray, 
-    size: Optional[int] = None,
 ) -> Tuple[float, NDArray]:
     """
     For a randomly selected bloc of voters, computes the group
     inefficiency score.
     """
-    _, n = dists.shape
+    _, n = cost_arr.shape
     k = len(winner_indices)
     random_bloc, voter_labels = generate_uniform_random_voter_bloc(n, k)
-    return group_inefficiency(dists, winner_indices, voter_labels, bloc_label=1, size=size), random_bloc
+    return group_inefficiency(cost_arr, winner_indices, voter_labels, bloc_label=1, size=None), random_bloc
+
+
+def weighted_random_group_inefficiency(
+    cost_arr: NDArray, 
+    winner_indices: NDArray, 
+    t: Optional[int] = 1,
+) -> Tuple[float, NDArray]:
+    """
+    For a randomly selected bloc of voters, computes the group
+    inefficiency score.
+    """
+    _, n = cost_arr.shape
+    k = len(winner_indices)
+    
+    # Get cost to winners for all voters (1,n) size
+    winner_set_cost_arr = np.sum(np.sort(cost_arr[winner_indices, :], axis = 0)[:t, :], axis = 0)
+
+    # Cost of best k candidates for each voter (1,n) size
+    candidate_set_cost_arr = np.sum(np.sort(cost_arr, axis = 0)[:t, :], axis = 0)
+
+    # Inefficiency by voter
+    greedy_scores = winner_set_cost_arr / candidate_set_cost_arr
+    greedy_scores /= np.sum(greedy_scores)
+    
+    random_bloc, voter_labels = generate_weighted_random_voter_bloc(n, k, t = t, weights = greedy_scores)
+    return group_inefficiency(cost_arr, winner_indices, voter_labels, bloc_label=1, size=None), random_bloc
 
 
 def greedy_group_inefficiency(
@@ -222,10 +259,10 @@ def greedy_group_inefficiency(
     voter_labels = np.zeros(n)
 
     # Get cost to winners for all voters (1,n) size
-    winner_set_cost_arr = np.array([np.sum(cost_arr[winner_indices], axis = 0)])
+    winner_set_cost_arr = np.sum(cost_arr[winner_indices], axis = 0)
 
     # Cost of best k candidates for each voter (1,n) size
-    candidate_set_cost_arr = np.array([np.sum(np.sort(cost_arr, axis = 0)[:k, :], axis = 0)])
+    candidate_set_cost_arr = np.sum(np.sort(cost_arr, axis = 0)[:k, :], axis = 0)
 
     # Inefficiency by voter
     greedy_scores = winner_set_cost_arr / candidate_set_cost_arr
@@ -237,17 +274,22 @@ def greedy_group_inefficiency(
 
     # Peter Note: This needs another loop. Could add later voter that then makes earlier
     # voter a good add to the inefficiency
-    for i in greedy_order[min_size:]:
-        new_ineff = 0
+    new_changes = True
+    while new_changes:
+        new_changes = False
+        for i in greedy_order[min_size:]:
+            new_ineff = 0
 
-        if voter_labels[i] != 1:
-            voter_labels[i] = 1
-            new_ineff = group_inefficiency(cost_arr, winner_indices, voter_labels, 1, size)
+            if voter_labels[i] != 1:
+                voter_labels[i] = 1
+                new_ineff = group_inefficiency(cost_arr, winner_indices, voter_labels, 1, size)
 
-        if new_ineff > ineff:
-            ineff = new_ineff
-        else:
-            voter_labels[i] = 0
+            if new_ineff > ineff:
+                ineff = new_ineff
+                new_changes = True
+                
+            else:
+                voter_labels[i] = 0
 
     greedy_bloc = np.where(voter_labels == 1)[0]
     return ineff, greedy_bloc
@@ -264,10 +306,10 @@ def random_greedy_group_inefficiency(cost_arr, winner_indices, size=None):
     voter_labels = np.zeros(n)
 
     # Get cost to winners for all voters (1,n) size
-    winner_set_cost_arr = np.array([np.sum(cost_arr[winner_indices], axis = 0)])
+    winner_set_cost_arr = np.sum(cost_arr[winner_indices], axis = 0)
 
     # Cost of best k candidates for each voter (1,n) size
-    candidate_set_cost_arr = np.array([np.sum(np.sort(cost_arr, axis = 0)[:k, :], axis = 0)])
+    candidate_set_cost_arr = np.sum(np.sort(cost_arr, axis = 0)[:k, :], axis = 0)
 
     # Sort with noise:
     greedy_scores = winner_set_cost_arr / candidate_set_cost_arr
