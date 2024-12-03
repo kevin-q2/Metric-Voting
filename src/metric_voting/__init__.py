@@ -4,6 +4,7 @@ from .election_sampling import (
 )
 
 from .elections import (
+    Election,
     SNTV,
     Bloc,
     Borda,
@@ -35,7 +36,5 @@ from .utils import (
     weighted_random_group_inefficiency,
     borda_matrix,
     remove_candidates,
-    is_complete_ranking,
-    approve_profile,
     uniform_profile,
 )

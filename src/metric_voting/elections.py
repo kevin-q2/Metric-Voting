@@ -1,68 +1,138 @@
-# Peter Note IMPORTANT: All of these methods need to be tested in some way. If
-# you are not going to use VoteKit which has tests, you need to make sure that
-# these methods are spitting out the correct results. If you would like help
-# making the tests, you can refer to the ones that are in VoteKit and just copy
-# the appropriate ones over needed to test these methods.
-
-
 import numpy as np
 from numpy.typing import NDArray
 from typing import Callable, Dict, Tuple, Any, List, Optional, Union
 import pulp
-from .utils import approve_profile, remove_candidates, borda_matrix
+from .utils import remove_candidates, borda_matrix
 
 
-def SNTV(profile: NDArray, k: int) -> NDArray:
+####################################################################################################
+
+
+class Election:
     """
-    Elect k candidates with the largest plurality scores.
-
-    Args:
-        profile (np.ndarray): (candidates x voters) Preference Profile.
-        k (int): Number of candidates to elect
-
-    Returns:
-        elected (np.ndarray): Winning candidates
+    Base class for election types.
     """
-    if not approve_profile(profile):
-        raise ValueError("Profile not in correct form.")
     
-    first_choice_votes = profile[0, :]
-    cands, counts = np.unique(first_choice_votes, return_counts=True)
+    def __init__(self):
+        pass
     
-    # break ties randomly with noise
-    counts = counts.astype(float)
-    counts += np.random.uniform(0, 1, len(counts))
-    
-    # NOTE: Should this elect random candidates if it can't find k winners??
-    elected = cands[np.argsort(counts)[::-1][: min(k, len(cands))]]
-    return elected
+    def _is_complete_ranking(self, ranking: NDArray) -> bool:
+        """
+        Checks if the input ranking is a complete ranking of the same m candidates.
+
+        Args:
+            ranking (np.ndarray): (m) Array of candidate indices.
+
+        Returns:
+            (bool): True if the ranking is complete, False otherwise.
+        """
+        return np.all(np.isin(np.arange(len(ranking)), np.unique(ranking)))
 
 
-def Bloc(profile : NDArray, k : int) -> NDArray:
+    def _approve_profile(self, profile: NDArray) -> bool:
+        """
+        Checks if the input profile is an ranked preference profile in 
+        correct form. Specifically, for our simplified models, this means 
+        a complete ranking of the same m candidates for each voter. 
+
+        Args:
+            profile (np.ndarray): (candidates x voters) Preference profile matrix.
+
+        Returns:
+            (bool): True if the profile is approved, False otherwise.
+        """
+        return np.all(np.apply_along_axis(self._is_complete_ranking, axis = 0, arr = profile))
+            
+    
+    def elect(profile: NDArray, k: int) -> NDArray:
+        """
+        Elect k candidates using an input preference profile.
+        
+        Args:
+            profile (np.ndarray): (candidates x voters) Preference Profile.
+            k (int): Number of candidates to elect
+
+        Returns:
+            elected (np.ndarray): Winning candidates
+        """
+        
+        pass
+    
+    
+####################################################################################################
+
+
+class SNTV(Election):
     """
-    Elect k candidates with the largest k-approval scores.
-
-    Args:
-        profile (np.ndarray): (candidates x voters) Preference Profile.
-        k (int): Number of candidates to elect
-
-    Returns:
-        elected (np.ndarray): Winning candidates
+    Single Non-Transferable Vote (Plurality) election.
     """
-    if not approve_profile(profile):
-        raise ValueError("Profile not in correct form.")
+    def __init__(self):
+        pass 
     
-    first_choice_votes = profile[:k, :]
-    cands, counts = np.unique(first_choice_votes, return_counts=True)
     
-    # break ties randomly with noise
-    counts = counts.astype(float)
-    counts += np.random.uniform(0, 1, len(counts))
-    
-    # NOTE: Should this elect random candidates if it can't find k winners??
-    elected = cands[np.argsort(counts)[::-1][: min(k, len(cands))]]
-    return elected
+    def elect(self, profile: NDArray, k: int) -> NDArray:
+        """
+        Elect k candidates with the largest plurality scores.
 
+        Args:
+            profile (np.ndarray): (candidates x voters) Preference Profile.
+            k (int): Number of candidates to elect
+
+        Returns:
+            elected (np.ndarray): Winning candidates
+        """
+        if not self._approve_profile(profile):
+            raise ValueError("Profile not in correct form.")
+        
+        first_choice_votes = profile[0, :]
+        cands, counts = np.unique(first_choice_votes, return_counts=True)
+        
+        # break ties randomly with noise
+        counts = counts.astype(float)
+        counts += np.random.uniform(0, 1, len(counts))
+        
+        # NOTE: Should this elect random candidates if it can't find k winners??
+        elected = cands[np.argsort(counts)[::-1][: min(k, len(cands))]]
+        return elected
+
+
+####################################################################################################
+
+
+class Bloc(Election):
+    """
+    Bloc approval election method.
+    """
+    def __init__(self):
+        pass
+    
+    def elect(self, profile : NDArray, k : int) -> NDArray:
+        """
+        Elect k candidates with the largest k-approval scores.
+
+        Args:
+            profile (np.ndarray): (candidates x voters) Preference Profile.
+            k (int): Number of candidates to elect
+
+        Returns:
+            elected (np.ndarray): Winning candidates
+        """
+        if not self._approve_profile(profile):
+            raise ValueError("Profile not in correct form.")
+        
+        first_choice_votes = profile[:k, :]
+        cands, counts = np.unique(first_choice_votes, return_counts=True)
+        
+        # break ties randomly with noise
+        counts = counts.astype(float)
+        counts += np.random.uniform(0, 1, len(counts))
+        
+        # NOTE: Should this elect random candidates if it can't find k winners??
+        elected = cands[np.argsort(counts)[::-1][: min(k, len(cands))]]
+        return elected
+
+
+####################################################################################################
 
 
 class STV:
@@ -109,7 +179,7 @@ class STV:
         self.eliminated_count = None
         
     
-    def __call__(self, profile : NDArray, k : int) -> NDArray: 
+    def elect(self, profile : NDArray, k : int) -> NDArray: 
         """
         Elect k candidates with the Single Transferrable Vote election.
         
@@ -149,7 +219,7 @@ class STV:
                 print("scores: " + str(candidate_scores))
             
             if len(satisfies_quota) > 0:
-                self.elect(satisfies_quota)
+                self.add_candidates(satisfies_quota)
                 elected = satisfies_quota
                 for c in elected:
                     self.transfer(candidate_voters[c])
@@ -207,7 +277,7 @@ class STV:
         return candidate_scores, candidate_voters, satisfies_quota
     
     
-    def elect(self, satisfies_quota : NDArray):
+    def add_candidates(self, satisfies_quota : NDArray):
         """
         Elect all candidates that satisfy the droop quota.
         
@@ -268,7 +338,7 @@ class STV:
         if surplus_votes >= 0:
             if self.transfer_type == 'fractional':
                 self.voter_weights[candidate_voters] = (
-                    (surplus_votes / total_votes)
+                    (surplus_votes / len(candidate_voters))
                 )
                 
             elif self.transfer_type == 'weighted-fractional':
@@ -276,11 +346,10 @@ class STV:
                     self.voter_weights[candidate_voters] / total_votes
                     )
                 self.voter_weights[candidate_voters] = (
-                    weights_normalized * surplus_votes
+                    surplus_votes * weights_normalized
                 )
                 
             elif self.transfer_type == 'cambridge':
-                # NOTE: I think this should work if all voter's weight values are always 1.
                 quota_voters = np.random.choice(candidate_voters, 
                                                 size = self.droop, 
                                                 replace = False)
@@ -316,6 +385,7 @@ class STV:
                     break
  
 
+####################################################################################################
 
 # Peter Note: Add borda_fn like we did for Borda matrix
 def Borda(profile, k):

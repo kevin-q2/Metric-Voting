@@ -1,3 +1,6 @@
+import sys
+import contextlib
+import itertools
 import numpy as np
 from metric_voting import STV
 from metric_voting import uniform_profile
@@ -8,183 +11,186 @@ from votekit.elections import fractional_transfer, random_transfer
 
 
 def test_fractional_basic_profile(basic_profile):
-    stv_elector = STV(transfer_type = 'fractional')
-    assert set(stv_elector(basic_profile, 1).tolist()) == set([3])
-    assert set(stv_elector(basic_profile, 2).tolist()) == set([1,3])
-    assert set(stv_elector(basic_profile, 4).tolist()) == set([0,1,2,3])
+    stv = STV(transfer_type = 'fractional')
+    assert set(stv.elect(basic_profile, 1).tolist()) == set([3])
+    assert set(stv.elect(basic_profile, 2).tolist()) == set([1,3])
+    assert set(stv.elect(basic_profile, 4).tolist()) == set([0,1,2,3])
     
     # For this profile, 3rd place should be randomly decided between an elimination for
     # either candidate 0 or candidate 2.
     samples = 1000
     winners = np.zeros((samples, 3))
-    for i in range(1000):
-        winners[i,:] = stv_elector(basic_profile, 3)
+    for i in range(samples):
+        winners[i,:] = stv.elect(basic_profile, 3)
 
     _, counts = np.unique(winners, return_counts=True)
 
     assert  len(counts) == 4
-    assert 450 < counts[0] and counts[0] < 550
-    assert 450 < counts[2] and counts[2] < 550
+    assert np.allclose(counts[0]/samples, 0.5, atol = 0.05, rtol = 0)
+    assert np.allclose(counts[2]/samples, 0.5, atol = 0.05, rtol = 0)
     
-    assert set(stv_elector(basic_profile, 4).tolist()) == set([0,1,2,3])
+    assert set(stv.elect(basic_profile, 4).tolist()) == set([0,1,2,3])
     
 
 def test_weighted_fractional_basic_profile(basic_profile):
-    stv_elector = STV(transfer_type = 'weighted-fractional')
-    assert set(stv_elector(basic_profile, 1).tolist()) == set([3])
-    assert set(stv_elector(basic_profile, 2).tolist()) == set([1,3])
-    assert set(stv_elector(basic_profile, 4).tolist()) == set([0,1,2,3])
+    stv = STV(transfer_type = 'weighted-fractional')
+    assert set(stv.elect(basic_profile, 1).tolist()) == set([3])
+    assert set(stv.elect(basic_profile, 2).tolist()) == set([1,3])
+    assert set(stv.elect(basic_profile, 4).tolist()) == set([0,1,2,3])
     
     # For this profile, 3rd place should be randomly decided between an elimination for
     # either candidate 0 or candidate 2.
     samples = 1000
     winners = np.zeros((samples, 3))
-    for i in range(1000):
-        winners[i,:] = stv_elector(basic_profile, 3)
+    for i in range(samples):
+        winners[i,:] = stv.elect(basic_profile, 3)
 
     _, counts = np.unique(winners, return_counts=True)
 
     assert  len(counts) == 4
-    assert 450 < counts[0] and counts[0] < 550
-    assert 450 < counts[2] and counts[2] < 550
+    assert np.allclose(counts[0]/samples, 0.5, atol = 0.05, rtol = 0)
+    assert np.allclose(counts[2]/samples, 0.5, atol = 0.05, rtol = 0)
     
-    assert set(stv_elector(basic_profile, 4).tolist()) == set([0,1,2,3])
+    assert set(stv.elect(basic_profile, 4).tolist()) == set([0,1,2,3])
     
     
 def test_cambridge_basic_profile(basic_profile):
-    stv_elector = STV(transfer_type = 'cambridge')
-    assert set(stv_elector(basic_profile, 1).tolist()) == set([3])
-    assert set(stv_elector(basic_profile, 2).tolist()) == set([1,3])
-    assert set(stv_elector(basic_profile, 4).tolist()) == set([0,1,2,3])
+    stv = STV(transfer_type = 'cambridge')
+    assert set(stv.elect(basic_profile, 1).tolist()) == set([3])
+    assert set(stv.elect(basic_profile, 2).tolist()) == set([1,3])
+    assert set(stv.elect(basic_profile, 4).tolist()) == set([0,1,2,3])
     
     # For this profile, 3rd place should be randomly decided between an elimination for
     # either candidate 0 or candidate 2.
     samples = 1000
     winners = np.zeros((samples, 3))
-    for i in range(1000):
-        winners[i,:] = stv_elector(basic_profile, 3)
+    for i in range(samples):
+        winners[i,:] = stv.elect(basic_profile, 3)
 
     _, counts = np.unique(winners, return_counts=True)
 
     assert  len(counts) == 4
-    assert 450 < counts[0] and counts[0] < 550
-    assert 450 < counts[2] and counts[2] < 550
+    assert np.allclose(counts[0]/samples, 0.5, atol = 0.05, rtol = 0)
+    assert np.allclose(counts[2]/samples, 0.5, atol = 0.05, rtol = 0)
     
-    assert set(stv_elector(basic_profile, 4).tolist()) == set([0,1,2,3])
+    assert set(stv.elect(basic_profile, 4).tolist()) == set([0,1,2,3])
     
     
 def test_fractional_num_winners():
-    stv_elector = STV(transfer_type = 'fractional')
-    
+    stv = STV(transfer_type = 'fractional')
     n = 20
     m = 10
     k = 5
-    
-    for _ in range(1000):
+    samples = 1000
+    for _ in range(samples):
         profile = uniform_profile(n, m)
-        winners = stv_elector(profile, k)
+        winners = stv.elect(profile, k)
         assert len(winners) == k
         
         
 def test_weighted_fractional_num_winners():
-    stv_elector = STV(transfer_type = 'weighted-fractional')
-    
+    stv = STV(transfer_type = 'weighted-fractional')
     n = 20
     m = 10
     k = 5
-    
-    for _ in range(1000):
+    samples = 1000
+    for _ in range(samples):
         profile = uniform_profile(n, m)
-        winners = stv_elector(profile, k)
+        winners = stv.elect(profile, k)
         assert len(winners) == k
         
         
 def test_cambridge_num_winners():
-    stv_elector = STV(transfer_type = 'cambridge')
-    
+    stv = STV(transfer_type = 'cambridge')
     n = 20
     m = 10
     k = 5
-    
-    for _ in range(1000):
+    samples = 1000
+    for _ in range(samples):
         profile = uniform_profile(n, m)
-        winners = stv_elector(profile, k)
+        winners = stv.elect(profile, k)
         assert len(winners) == k
-        
+
+
+def test_fractional_vs_weighted_transfer(fractional_vs_weighted_transfer_profile):
+    frac_stv = STV(transfer_type = 'fractional')
+    weighted_frac_stv = STV(transfer_type = 'weighted-fractional')
+    
+    n = 10
+    m = 4
+    k = 3
+    frac_winners = frac_stv.elect(fractional_vs_weighted_transfer_profile, k)
+    weighted_frac_winners = weighted_frac_stv.elect(fractional_vs_weighted_transfer_profile, k)
+     
+    assert set(frac_winners) == {0,2,3}
+    assert set(weighted_frac_winners) == {0,1,2}
+    
         
 def test_fractional_with_votekit():
     n = 20
-    m = 10
+    m = 8
     k = 5
+    #np.random.seed(99877)
     prof = uniform_profile(n, m)
     ballots = [Ballot(ranking = [{str(j)} for j in prof[:,i]], weight = 1) for i in range(n)]
     votekit_prof = PreferenceProfile(ballots= ballots)
     
     samples = 1000
-    winner_record = np.zeros((samples, k))
-    votekit_winner_record = np.zeros((samples, k))
+    winner_dist = {frozenset(comb): 0 for comb in itertools.combinations(range(m), k)}
+    votekit_winner_dist = {frozenset(comb): 0 for comb in itertools.combinations(range(m), k)}
     for i in range(samples):
-        winners = STV(transfer_type = 'fractional')(prof, k)
+        stv = STV(transfer_type = 'fractional')
+        winners = stv.elect(prof, k)
+        winner_dist[frozenset(winners)] += 1
         
-        election = votekit_STV(votekit_prof, k, transfer = fractional_transfer)
-        votekit_winners = election.get_elected()
+        with contextlib.redirect_stdout(None):
+            election = votekit_STV(votekit_prof, k, transfer = fractional_transfer)
+            votekit_winners = election.get_elected()
+            
         votekit_winners = [int(winner) for winner_set in
                             votekit_winners for winner in list(winner_set)]
+        votekit_winner_dist[frozenset(votekit_winners)] += 1
         
-        winner_record[i,:] = winners
-        votekit_winner_record[i,:] = votekit_winners
-        
-    winner_dist = np.zeros(m)
-    valz,counts = np.unique(winner_record, return_counts = True)
-    for i,u in enumerate(valz):
-        winner_dist[int(u)] += counts[i]
-    winner_dist /= samples
+    tv_distance = 0
+    for wset in winner_dist.keys():
+        tv_distance += abs(winner_dist[wset]/samples - votekit_winner_dist[wset]/samples)
+    tv_distance /= 2
     
-    votekit_winner_dist = np.zeros(m)
-    valz,counts = np.unique(votekit_winner_record, return_counts = True)
-    for i,u in enumerate(valz):
-        votekit_winner_dist[int(u)] += counts[i]
-    votekit_winner_dist /= samples
-    
-    tv_distance = np.sum(np.abs(winner_dist - votekit_winner_dist))
-    assert tv_distance < 0.1
+    #breakpoint()
+    assert tv_distance < 0.05
 
 
 def test_cambridge_with_votekit():
     n = 20
-    m = 10
+    m = 8
     k = 5
+    #np.random.seed(99877)
     prof = uniform_profile(n, m)
     ballots = [Ballot(ranking = [{str(j)} for j in prof[:,i]], weight = 1) for i in range(n)]
     votekit_prof = PreferenceProfile(ballots= ballots)
     
     samples = 1000
-    winner_record = np.zeros((samples, k))
-    votekit_winner_record = np.zeros((samples, k))
+    winner_dist = {frozenset(comb): 0 for comb in itertools.combinations(range(m), k)}
+    votekit_winner_dist = {frozenset(comb): 0 for comb in itertools.combinations(range(m), k)}
     for i in range(samples):
-        winners = STV(transfer_type = 'cambridge')(prof, k)
+        stv = STV(transfer_type = 'cambridge')
+        winners = stv.elect(prof, k)
+        winner_dist[frozenset(winners)] += 1
         
-        election = votekit_STV(votekit_prof, k, transfer = random_transfer)
-        votekit_winners = election.get_elected()
+        with contextlib.redirect_stdout(None):
+            election = votekit_STV(votekit_prof, k, transfer = random_transfer)
+            votekit_winners = election.get_elected()
+            
         votekit_winners = [int(winner) for winner_set in
                             votekit_winners for winner in list(winner_set)]
+        votekit_winner_dist[frozenset(votekit_winners)] += 1
         
-        winner_record[i,:] = winners
-        votekit_winner_record[i,:] = votekit_winners
-        
-    winner_dist = np.zeros(m)
-    val,counts = np.unique(winner_record, return_counts = True)
-    for i,u in enumerate(val):
-        winner_dist[int(u)] += counts[i]
-    winner_dist /= samples
+    tv_distance = 0
+    for wset in winner_dist.keys():
+        tv_distance += abs(winner_dist[wset]/samples - votekit_winner_dist[wset]/samples)
+    tv_distance /= 2
     
-    votekit_winner_dist = np.zeros(m)
-    val,counts = np.unique(votekit_winner_record, return_counts = True)
-    for i,u in enumerate(val):
-        votekit_winner_dist[int(u)] += counts[i]
-    votekit_winner_dist /= samples
-    
-    tv_distance = np.sum(np.abs(winner_dist - votekit_winner_dist))
-    assert tv_distance < 0.1
+    #breakpoint()
+    assert tv_distance < 0.05
     
     
