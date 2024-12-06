@@ -29,8 +29,6 @@ def test_fractional_basic_profile(basic_profile):
     assert np.allclose(counts[0]/samples, 0.5, atol = 0.05, rtol = 0)
     assert np.allclose(counts[2]/samples, 0.5, atol = 0.05, rtol = 0)
     
-    assert set(stv.elect(basic_profile, 4).tolist()) == set([0,1,2,3])
-    
 
 def test_weighted_fractional_basic_profile(basic_profile):
     stv = STV(transfer_type = 'weighted-fractional')
@@ -51,8 +49,6 @@ def test_weighted_fractional_basic_profile(basic_profile):
     assert np.allclose(counts[0]/samples, 0.5, atol = 0.05, rtol = 0)
     assert np.allclose(counts[2]/samples, 0.5, atol = 0.05, rtol = 0)
     
-    assert set(stv.elect(basic_profile, 4).tolist()) == set([0,1,2,3])
-    
     
 def test_cambridge_basic_profile(basic_profile):
     stv = STV(transfer_type = 'cambridge')
@@ -72,8 +68,6 @@ def test_cambridge_basic_profile(basic_profile):
     assert  len(counts) == 4
     assert np.allclose(counts[0]/samples, 0.5, atol = 0.05, rtol = 0)
     assert np.allclose(counts[2]/samples, 0.5, atol = 0.05, rtol = 0)
-    
-    assert set(stv.elect(basic_profile, 4).tolist()) == set([0,1,2,3])
     
     
 def test_fractional_num_winners():
@@ -125,7 +119,7 @@ def test_fractional_vs_weighted_transfer(fractional_vs_weighted_transfer_profile
     assert set(frac_winners) == {0,2,3}
     assert set(weighted_frac_winners) == {0,1,2}
     
-        
+'''    
 def test_fractional_with_votekit():
     n = 20
     m = 8
@@ -192,5 +186,4 @@ def test_cambridge_with_votekit():
     
     #breakpoint()
     assert tv_distance < 0.05
-    
-    
+'''

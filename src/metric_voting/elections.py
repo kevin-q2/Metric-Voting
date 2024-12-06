@@ -99,43 +99,84 @@ class SNTV(Election):
 ####################################################################################################
 
 
-class Bloc(Election):
+class CommitteeScoring(Election):
     """
-    Bloc approval election method.
-    """
-    def __init__(self):
-        pass
+    General parent class for electing k candidates via simple Committee Scoring Mechanisms.
+    This class uses a scoring scheme to give scores to candidates based upon
+    their position in the preference profile. This is a function 
+    which takes as input the number of candidates m, the number of winners k, 
+    and the position i in {1,...,m} of the candidate in a given voter's ranking. 
     
-    def elect(self, profile : NDArray, k : int) -> NDArray:
+    Scores for a candidate are summed over all voters, and the k candidates with the
+    largest scores are elected.
+    
+    Args:
+        scoring_scheme (Callable[[int, int, int], float]): Scheme for candidate scoring. 
+    """
+    def __init__(self,scoring_scheme: Callable[[int, int, int], float]):        
+        self.scoring_scheme = scoring_scheme
+        
+    def elect(self, profile : NDArray, k : int) -> NDArray: 
         """
-        Elect k candidates with the largest k-approval scores.
-
+        Elect k candidates with the largest Borda scores.
+        
         Args:
-            profile (np.ndarray): (candidates x voters) Preference Profile.
+            profile (NDArray): (m x n) Preference Profile.
             k (int): Number of candidates to elect
-
+            
         Returns:
-            elected (np.ndarray): Winning candidates
+            elected (NDArray): Winning candidates
         """
+        
         if not self._approve_profile(profile):
             raise ValueError("Profile not in correct form.")
         
-        first_choice_votes = profile[:k, :]
-        cands, counts = np.unique(first_choice_votes, return_counts=True)
-        
-        # break ties randomly with noise
-        counts = counts.astype(float)
-        counts += np.random.uniform(0, 1, len(counts))
-        
-        # NOTE: Should this elect random candidates if it can't find k winners??
-        elected = cands[np.argsort(counts)[::-1][: min(k, len(cands))]]
-        return elected
+        m, n = profile.shape
+        candidate_scores = np.zeros(m)
 
+        for i in range(n):
+            for j in range(m):
+                c = profile[j, i]
+                candidate_scores[c] += self.scoring_scheme(m, k, j + 1)
+                
+        # break ties randomly with noise
+        candidate_scores = candidate_scores.astype(float)
+        candidate_scores += np.random.uniform(0, 1, len(candidate_scores))
+
+        elected = np.argsort(candidate_scores)[::-1][:k]
+        return elected
+    
+    
+####################################################################################################
+
+
+class Bloc(CommitteeScoring):
+    """
+    Bloc approval election method. This is a committee scoring method
+    which uses the scoring scheme f(m, k, i) = 1 for i <= k and 0 otherwise.
+    """
+    def __init__(self):
+        scoring_scheme = lambda x, y, z: 1 if z <= y else 0
+        super().__init__(scoring_scheme)
+    
 
 ####################################################################################################
 
 
-class STV:
+class Borda(CommitteeScoring):
+    """
+    Elect k candidates with the Borda Scoring Mechanism. This is a committee scoring method 
+    which uses the scoring scheme f(m, k, i) = m - i.
+    """
+    def __init__(self):        
+        scoring_scheme = lambda x, y, z: x - z
+        super().__init__(scoring_scheme)
+    
+    
+####################################################################################################
+
+
+class STV(Election):
     """
     Elect k candidates with the Single Transferrable Vote election.
     Uses the droop quota as an election threshold, and breaks ties randomly.
@@ -190,6 +231,9 @@ class STV:
         Returns:
             elected (NDArray): Winning candidates
         """
+        if not self._approve_profile(profile):
+            raise ValueError("Profile not in correct form.")
+        
         self.profile = profile
         self.k = k
         self.m, self.n = profile.shape
@@ -387,83 +431,84 @@ class STV:
 
 ####################################################################################################
 
-# Peter Note: Add borda_fn like we did for Borda matrix
-def Borda(profile, k):
-    """
-    Elect k candidates with the largest Borda scores.
 
-    Args:
-        profile (np.ndarray): (candidates x voters) Preference Profile.
-        k (int): Number of candidates to elect
-
-    Returns:
-        elected (np.ndarray): Winning candidates
-    """
-    if not approve_profile(profile):
-        raise ValueError("Profile not in correct form.")
-    
-    m, n = profile.shape
-    candidate_scores = np.zeros(m)
-
-    for i in range(n):
-        for j in range(m):
-            c = profile[j, i]
-            candidate_scores[c] += (m - 1) - j  # Should this be m - j??
-
-    elected = np.argsort(candidate_scores)[::-1][:k]
-    return elected
-
-
-def ChamberlinCourant(profile, k):
+class ChamberlinCourant(Election):
     """
     Elect k candidates with the Chamberlain Courant Mechanism.
     This function uses an integer linear program to compute an optimal
     assignment of voters to candidates to maximize the assignment scores
     (where assignment scores are calculated with the borda score).
-
-    Args:
-        profile (np.ndarray): (candidates x voters) Preference Profile.
-        k (int): Number of candidates to elect
-
-    Returns:
-        elected (np.ndarray): Winning candidates
-    """
-    if not approve_profile(profile):
-        raise ValueError("Profile not in correct form.")
     
-    m, n = profile.shape
-    B = borda_matrix(profile).T  # n x m matrix after transpose
+    NOTE: As far as I can tell, these solvers output deterministic answers,
+    even in cases where there are multiple optimal solutions...
+    
+    Args:
+        solver (str, optional): Solver for the integer linear program. These are taken 
+            from PuLP's available solvers, for more information please see 
+            (https://coin-or.github.io/pulp/guides/how_to_configure_solvers.html).
+            
+            Some options 'PULP_CBC_CMD' and 'GUROBI_CMD' (requires licesnse).
+            Defaults to 'PULP_CBC_CMD', which uses PuLPs default coin and branch bound solver.
+            
+    Attributes:
+        objective (float): Objective value of the last solved problem.
+    """
+    def __init__(self, solver : str = 'PULP_CBC_CMD'):
+        self.solver = pulp.getSolver(solver, msg = False)
+        self.objective = None
+        
+    
+    def elect(self, profile : NDArray, k : int) -> NDArray: 
+        """
+        Elect k candidates with the Chamberlain Courant Mechanism.
 
-    problem = pulp.LpProblem("Chamberlin-Courant", pulp.LpMaximize)
+        Args:
+            profile (np.ndarray): (candidates x voters) Preference Profile.
+            k (int): Number of candidates to elect
 
-    # Voter assignment variable (voter j gets assigned to candidate i)
-    x = pulp.LpVariable.dicts(
-        "x", ((i, j) for i in range(n) for j in range(m)), cat="Binary"
-    )
-    # Candidate 'elected' variable
-    y = pulp.LpVariable.dicts("y", range(m), cat="Binary")
+        Returns:
+            elected (np.ndarray): Winning candidates
+        """
+        if not self._approve_profile(profile):
+            raise ValueError("Profile not in correct form.")
+        
+        m, n = profile.shape
+        B = borda_matrix(profile).T  # n x m matrix after transpose
 
-    # Objective function:
-    problem += pulp.lpSum(B[i, j] * x[i, j] for i in range(n) for j in range(m))
+        problem = pulp.LpProblem("Chamberlin-Courant", pulp.LpMaximize)
 
-    # Each voter is assigned to exactly one candidate
-    for i in range(n):
-        problem += pulp.lpSum(x[i, j] for j in range(m)) == 1
+        # Voter assignment variable (voter j gets assigned to candidate i)
+        x = pulp.LpVariable.dicts(
+            "x", ((i, j) for i in range(n) for j in range(m)), cat="Binary"
+        )
+        # Candidate 'elected' variable
+        y = pulp.LpVariable.dicts("y", range(m), cat="Binary")
 
-    # A voter can only be assigned to a candidate if that candidate is elected
-    for i in range(n):
-        for j in range(m):
-            problem += x[i, j] <= y[j]
+        # Objective function:
+        problem += pulp.lpSum(B[i, j] * x[i, j] for i in range(n) for j in range(m))
 
-    # Elect exactly k candidates
-    problem += pulp.lpSum(y[j] for j in range(m)) == k
+        # Each voter is assigned to exactly one candidate
+        for i in range(n):
+            problem += pulp.lpSum(x[i, j] for j in range(m)) == 1
 
-    problem.solve(pulp.PULP_CBC_CMD(msg=False))
-    elected = np.array([j for j in range(m) if pulp.value(y[j]) == 1])
-    return elected
+        # A voter can only be assigned to a candidate if that candidate is elected
+        for i in range(n):
+            for j in range(m):
+                problem += x[i, j] <= y[j]
+
+        # Elect exactly k candidates
+        problem += pulp.lpSum(y[j] for j in range(m)) == k
+
+        problem.solve(self.solver)
+        elected = np.array([j for j in range(m) if pulp.value(y[j]) == 1])
+        self.objective = pulp.value(problem.objective)
+        return elected
+    
+    
+####################################################################################################
 
 
-def Monroe(profile, k):
+class Monroe(Election):
     """
     Elect k candidates with the Monroe Mechanism.
     This function uses an integer linear program to compute an optimal
@@ -471,305 +516,506 @@ def Monroe(profile, k):
     (where assignment scores are calculated with the borda score).
     With the added constraint that each candidate can only represent
     exactly floor(n/k) or ceiling(n/k) voters.
-
-    Args:
-        profile (np.ndarray): (candidates x voters) Preference Profile.
-        k (int): Number of candidates to elect
-
-    Returns:
-        elected (np.ndarray): Winning candidates
-    """
-    if not approve_profile(profile):
-        raise ValueError("Profile not in correct form.")
     
-    m, n = profile.shape
-    B = borda_matrix(profile).T  # n x m matrix after transpose
+    NOTE: As far as I can tell, these solvers output deterministic answers,
+    even in cases where there are multiple optimal solutions...
+    
+    Args:
+        solver (str, optional): Solver for the integer linear program. These are taken 
+            from PuLP's available solvers, for more information please see 
+            (https://coin-or.github.io/pulp/guides/how_to_configure_solvers.html).
+            
+            Some options 'PULP_CBC_CMD' and 'GUROBI_CMD' (requires licesnse).
+            Defaults to 'PULP_CBC_CMD', which uses PuLPs default coin and branch bound solver.
+    
+    Attributes:
+        objective (float): Objective value of the last solved problem.
+    """
+    def __init__(self, solver : str = 'PULP_CBC_CMD'):
+        self.solver = pulp.getSolver(solver, msg = False)
+    
+    
+    def elect(self, profile : NDArray, k : int) -> NDArray: 
+        """
 
-    problem = pulp.LpProblem("Monroe", pulp.LpMaximize)
+        Args:
+            profile (np.ndarray): (candidates x voters) Preference Profile.
+            k (int): Number of candidates to elect
 
-    # Voter assignment variable
-    x = pulp.LpVariable.dicts(
-        "x", ((i, j) for i in range(n) for j in range(m)), cat="Binary"
-    )
-    # Candidate 'elected' variable
-    y = pulp.LpVariable.dicts("y", range(m), cat="Binary")
+        Returns:
+            elected (np.ndarray): Winning candidates
+        """
+        if not self._approve_profile(profile):
+            raise ValueError("Profile not in correct form.")
+        
+        m, n = profile.shape
+        B = borda_matrix(profile).T  # n x m matrix after transpose
 
-    # Objective function:
-    problem += pulp.lpSum(B[i, j] * x[i, j] for i in range(n) for j in range(m))
+        problem = pulp.LpProblem("Monroe", pulp.LpMaximize)
 
-    # Each voter is assigned to exactly one candidate
-    for i in range(n):
-        problem += pulp.lpSum(x[i, j] for j in range(m)) == 1
+        # Voter assignment variable
+        x = pulp.LpVariable.dicts(
+            "x", ((i, j) for i in range(n) for j in range(m)), cat="Binary"
+        )
+        # Candidate 'elected' variable
+        y = pulp.LpVariable.dicts("y", range(m), cat="Binary")
 
-    # A voter can only be assigned to a candidate if that candidate is elected
-    for i in range(n):
+        # Objective function:
+        problem += pulp.lpSum(B[i, j] * x[i, j] for i in range(n) for j in range(m))
+
+        # Each voter is assigned to exactly one candidate
+        for i in range(n):
+            problem += pulp.lpSum(x[i, j] for j in range(m)) == 1
+
+        # A voter can only be assigned to a candidate if that candidate is elected
+        for i in range(n):
+            for j in range(m):
+                problem += x[i, j] <= y[j]
+
+        # Monroe constraint on the size of candidate's voter sets
+        # This is the only difference from chamberlin Courant
         for j in range(m):
-            problem += x[i, j] <= y[i]
+            problem += pulp.lpSum(x[i, j] for i in range(n)) >= np.floor(n / k) * y[j]
+            problem += pulp.lpSum(x[i, j] for i in range(n)) <= np.ceil(n / k) * y[j]
 
-    # Monroe constraint on the size of candidate's voter sets
-    for j in range(m):
-        problem += pulp.lpSum(x[i, j] for i in range(n)) >= np.floor(n / k) * y[j]
-        problem += pulp.lpSum(x[i, j] for i in range(n)) <= np.ceil(n / k) * y[j]
+        # Elect exactly k candidates
+        problem += pulp.lpSum(y[j] for j in range(m)) == k
 
-    # Elect exactly k candidates
-    problem += pulp.lpSum(y[j] for j in range(m)) == k
+        problem.solve(self.solver)
+        elected = np.array([j for j in range(m) if pulp.value(y[j]) == 1])
+        self.objective = pulp.value(problem.objective)
+        return elected
+    
+    
+####################################################################################################
 
-    problem.solve(pulp.PULP_CBC_CMD(msg=False))
-    elected = np.array([j for j in range(m) if pulp.value(y[j]) == 1])
-    return elected
 
-
-def GreedyCC(profile, k):
+class GreedyCC(Election):
     """
     Elect k candidates using a greedy approximation to the
     Chamberlain Courant rule. At every iteration, this rule
-    selects a candidate to add to a growing winner set by finding
-    the candidate which increases the assignment scores the most.
-
-    Args:
-        profile (np.ndarray): (candidates x voters) Preference Profile.
-        k (int): Number of candidates to elect
-
-    Returns:
-        elected (np.ndarray): Winning candidates
-    """
-    if not approve_profile(profile):
-        raise ValueError("Profile not in correct form.")
+    selects a candidate to add to a growing winner set by greedily selecting
+    the candidate which gives the best increase to the current assignment scores.
     
-    m, n = profile.shape
-    B = borda_matrix(profile)
+    For more information, please see the paper:
+    "Budgeted Social Choice: From Consensus to Personalized Decision Making" 
+    - Lu and Boutilier (2011)
+    (https://www.cs.toronto.edu/~tl/papers/LuBoutilier_budgeted_IJCAI11.pdf)
+    
+    
+    Attributes:
+        objective (float): Objective value of the last solved problem.
+    """
+    def __init__(self):
+        self.objective = None
+    
+    
+    def elect(self, profile : NDArray, k : int) -> NDArray:
+        """
+        Elect k candidates using a greedy approximation to the
+        Chamberlain Courant rule.
 
-    is_elected = np.zeros(m, dtype=bool)
-    voter_assign_scores = np.zeros(n) - 1
+        Args:
+            profile (np.ndarray): (candidates x voters) Preference Profile.
+            k (int): Number of candidates to elect
 
-    for _ in range(k):
-        max_score = -1
-        max_cand = -1
-        for i in range(m):
-            if not is_elected[i]:
-                score_gain = np.sum(np.maximum(voter_assign_scores, B[i, :]))
-                if score_gain > max_score:
-                    max_score = score_gain
-                    max_cand = i
+        Returns:
+            elected (np.ndarray): Winning candidates
+        """
+        if not self._approve_profile(profile):
+            raise ValueError("Profile not in correct form.")
+        
+        m, n = profile.shape
+        B = borda_matrix(profile)
 
-        is_elected[max_cand] = True
-        voter_assign_scores = np.maximum(voter_assign_scores, B[max_cand, :])
+        is_elected = np.zeros(m, dtype=bool)
+        voter_assign_scores = np.zeros(n) - 1
 
-    return np.where(is_elected)[0]
+        for _ in range(k):
+            scores = np.zeros(m)
+            for i in range(m):
+                if not is_elected[i]:
+                    score_gain = np.sum(np.maximum(voter_assign_scores, B[i, :]))
+                    scores[i] = score_gain
+
+            # Break ties randomly
+            scores += np.random.uniform(0, 1, len(scores))
+            max_cand = np.argmax(scores)
+            is_elected[max_cand] = True
+            voter_assign_scores = np.maximum(voter_assign_scores, B[max_cand, :])
+
+        self.objective = np.sum(voter_assign_scores)
+        return np.where(is_elected)[0]
 
 
-# Peter Note: Chunk this out so that you can test the random sections
-def PluralityVeto(profile, k):
+####################################################################################################
+
+
+class PluralityVeto(Election):
     """
     Elect k candidates with the Plurality Veto mechanism. Counts
     initial plurality scores for every candidate then, in a randomized order,
-    lets voters veto candidates until there are only k left.
-
-    Args:
-        profile (np.ndarray): (candidates x voters) Preference Profile.
-        k (int): Number of candidates to elect
-
-    Returns:
-        elected (np.ndarray): Winning candidates
-    """
-    if not approve_profile(profile):
-        raise ValueError("Profile not in correct form.")
+    lets voters veto candidates until there are only k left. 
     
-    m, n = profile.shape
-    candidate_scores = np.zeros(m)
-    eliminated = np.zeros(m - k) - 1
-    eliminated_count = 0
-
-    # Count initial plurality scores
-    first_choice_votes = profile[0, :]
-    for c in first_choice_votes:
-        candidate_scores[c] += 1
-
-    # Find candidates with 0 plurality score
-    zero_scores = np.where(candidate_scores == 0)[0]
-    if len(zero_scores) > m - k:
-        np.random.shuffle(zero_scores)
-        zero_scores = zero_scores[: (m - k)]
-
-    # And remove them from the preference profile
-    profile = remove_candidates(profile, zero_scores)
-    eliminated[: len(zero_scores)] = zero_scores
-    eliminated_count += len(zero_scores)
-
-    # Veto in a randomize order
-    random_order = list(range(n))
-    np.random.shuffle(random_order)
-    while eliminated_count < (m - k):
-        for i, v in enumerate(random_order):
-            least_preferred = profile[-1, v]
-            # A veto decrements the candidates score by 1
-            candidate_scores[least_preferred] -= 1
-            if candidate_scores[least_preferred] <= 0:
-                profile = remove_candidates(profile, [least_preferred])
-                eliminated[eliminated_count] = least_preferred
-                eliminated_count += 1
-                random_order = random_order[i + 1 :] + random_order[: i + 1]
-                break
-
-    elected = np.array([c for c in range(m) if c not in eliminated])
-    return elected
-
-
-# Peter Note: Add link to paper
-def ExpandingApprovals(profile, k):
-    """
-    Elect k candidates using the expanding approvals rule seen in:
-    (Proportional Representation in Metric Spaces and Low-Distortion Committee Selection
-    Kalayci, Kempe, Kher 2024). Please refer to their paper for a full description.
-
-    Args:
-        profile (np.ndarray): (candidates x voters) Preference Profile.
-        k (int): Number of candidates to elect
-
-    Returns:
-        elected (np.ndarray): Winning candidates
-    """
-    if not approve_profile(profile):
-        raise ValueError("Profile not in correct form.")
+    For more information please see the paper:
+    "Plurality Veto: A Simple Voting Rule Achieving Optimal Metric Distortion"
+    - Kizilkaya, Kempe (2023)
+    (https://arxiv.org/abs/2206.07098)
     
-    m, n = profile.shape
-    droop = np.ceil(n / k)
-    uncovered_mask = np.ones(n, dtype=bool)
-    elected_mask = np.zeros(m, dtype=bool)
-    neighborhood = np.zeros(profile.shape)
-    random_order = np.random.permutation(n)
-
-    # Peter Note: Move some of this to another function so we don't have indent of death
-    for t in range(m):
-        for v in random_order:
-            if uncovered_mask[v]:
-                c = profile[t, v]
-                if not elected_mask[c]:
-                    neighborhood[c, v] = 1
-                    if np.sum(neighborhood[c, :]) >= droop:
-                        elected_mask[c] = True
-                        c_voters = np.where(neighborhood[c, :])[0]
-                        neighborhood[:, c_voters] = 0
-                        uncovered_mask[c_voters] = False
-
-    if np.sum(elected_mask) < k:
-        remaining = k - np.sum(elected_mask)
-        non_elected = np.where(elected_mask == False)[0]
-        new_elects = np.random.choice(non_elected, remaining, replace=False)
-        elected_mask[new_elects] = True
-
-    elected = np.where(elected_mask)[0]
-    return elected
-
-
-def SMRD(profile, k):
+    NOTE: That this is an extension for what is really designed to be a single winner 
+    voting rule. 
     """
+    def __init__(self):
+        self.profile = None
+        self.m, self.n = None, None
+        self.k = None
+        self.candidate_scores = None
+        self.eliminated = None
+        self.last_place_indices = None
+    
+    
+    def update_least_preffered(self):
+        """
+        Updates the last place indices of voters in the preference profile.
+        """
+        for i in range(self.n):
+            while self.eliminated[self.profile[self.last_place_indices[i], i]] == 1:
+                self.last_place_indices[i] -= 1
+                
+    
+    def initialize(self):
+        """
+        Counts first place votes and eliminates any candidates with 0.
+        """
+        # Count initial plurality scores
+        first_choice_votes = self.profile[0, :]
+        for c in first_choice_votes:
+            self.candidate_scores[c] += 1
+
+        # Find candidates with 0 plurality score
+        zero_scores = np.where(self.candidate_scores == 0)[0]
+        if len(zero_scores) > self.m - self.k:
+            np.random.shuffle(zero_scores)
+            zero_scores = zero_scores[: (self.m - self.k)]
+
+        # And remove them from the election
+        self.eliminated[zero_scores] = 1
+        self.update_least_preffered()
+        
+        
+    def elect(self, profile : NDArray, k : int) -> NDArray:
+        """
+        Elect k candidates with the multiwinner Plurality Veto mechanism.
+        Args:
+            profile (np.ndarray): (candidates x voters) Preference Profile.
+            k (int): Number of candidates to elect
+
+        Returns:
+            elected (np.ndarray): Winning candidates
+        """
+        
+        if not self._approve_profile(profile):
+            raise ValueError("Profile not in correct form.")
+        
+        self.profile = profile
+        self.k = k
+        self.m, self.n = profile.shape
+        self.candidate_scores = np.zeros(self.m)
+        self.eliminated = np.zeros(self.m)
+        self.last_place_indices = np.zeros(self.n, dtype=int) + self.m - 1 # Last place index
+        
+        self.initialize()
+        eliminated_count = len(np.where(self.eliminated == 1)[0])
+
+        # Veto in a randomize order
+        random_order = list(range(self.n))
+        np.random.shuffle(random_order)
+        while eliminated_count < (self.m - self.k):
+            for i, v in enumerate(random_order):
+                least_preferred = profile[self.last_place_indices[v], v]
+                # A veto decrements the candidates score by 1
+                self.candidate_scores[least_preferred] -= 1
+                if self.candidate_scores[least_preferred] <= 0:
+                    self.eliminated[least_preferred] = 1
+                    self.update_least_preffered()
+                    eliminated_count += 1
+                    random_order = random_order[i + 1 :] + random_order[: i + 1]
+                    break
+
+        elected = np.where(self.eliminated == 0)[0]
+        return elected
+    
+
+####################################################################################################
+
+
+class MultiPluralityVeto(Election):
+    """
+    Elect k candidates with the Multiwinner Plurality Veto mechanism. Each voter 
+    ranks potential winner sets, which the mechanism then treats like individual 
+    candidates. The mechanism then elects a winner set by applying the 
+    single winner Plurality Veto rule to this ranking.
+    
+    For more information please see the paper:
+    "Plurality Veto: A Simple Voting Rule Achieving Optimal Metric Distortion"
+    - Kizilkaya, Kempe (2023)
+    (https://arxiv.org/abs/2206.07098)
+    """
+    
+    def __init__(self):
+        pass
+    
+    def elect(profile : NDArray, k : int) -> NDArray:
+        pass
+
+
+####################################################################################################
+
+
+class ExpandingApprovals(Election):
+    """
+    Elect k candidates using the expanding approvals rule.
+    Candidates are elected through a sequential approval process. At each step i, 
+    voters approve their ith ranked candidate in a random order. Once candidates 
+    have passed an approval threshold, they are elected. 
+    
+    For more information please see the paper:
+    "Proportional Representation in Metric Spaces and Low-Distortion Committee Selection"
+    -Kalayci, Kempe, Kher (2024)
+    (https://arxiv.org/abs/2312.10369)
+    """
+    def __init__(self):
+        self.quota = None
+        self.uncovered_mask = None
+        self.elected_mask = None
+        self.neighborhood = None
+        self.random_order = None
+    
+    
+    def candidate_check_elect(self, c : int):
+        """
+        Check if a candidate has passed the quota and elect them if they have.
+        
+        Args:
+            c (int): Candidate index.
+        """
+        if np.sum(self.neighborhood[c, :]) >= self.quota:
+            self.elected_mask[c] = True
+            c_voters = np.where(self.neighborhood[c, :])[0]
+            self.neighborhood[:, c_voters] = 0
+            self.uncovered_mask[c_voters] = False
+        
+    
+    def voter_approve(self, v : int, t : int):
+        """
+        Approve the voter's t-th ranked candidate if they have not 
+        yet been elected, and check if they have reached the quota.
+        
+        Args:
+            voter (int): Voter index.
+            t (int): Rank of the voter's candidate.
+        """
+        if self.uncovered_mask[v]:
+            c = self.profile[t, v]
+            if not self.elected_mask[c]:
+                self.neighborhood[c, v] = 1
+                self.candidate_check_elect(c)
+        
+    
+    def approval_round(self, t : int):
+        """
+        Conduct an approval round of the expanding approvals rule.
+        
+        Args:
+            t (int): Round number.
+        """
+        for v in self.random_order:
+            self.voter_approve(v, t)
+        
+    
+    def elect(self, profile : NDArray, k : int) -> NDArray:
+        """
+        Elect k candidates using the expanding approvals rule. 
+
+        Args:
+            profile (np.ndarray): (candidates x voters) Preference Profile.
+            k (int): Number of candidates to elect
+
+        Returns:
+            elected (np.ndarray): Winning candidates
+        """
+        if not self._approve_profile(profile):
+            raise ValueError("Profile not in correct form.")
+        
+        self.profile = profile
+        m, n = profile.shape
+        self.quota = np.ceil(n / k)
+        self.uncovered_mask = np.ones(n, dtype=bool)
+        self.elected_mask = np.zeros(m, dtype=bool)
+        self.neighborhood = np.zeros(profile.shape)
+        self.random_order = np.random.permutation(n)
+
+        # Main election loop
+        for t in range(m):
+            self.approval_round(t)
+            
+        # Elect remaining candidates if needed
+        if np.sum(self.elected_mask) < k:
+            remaining = k - np.sum(self.elected_mask)
+            non_elected = np.where(self.elected_mask == False)[0]
+            new_elects = np.random.choice(non_elected, remaining, replace=False)
+            self.elected_mask[new_elects] = True
+
+        elected = np.where(self.elected_mask)[0]
+        return elected
+
+
+####################################################################################################
+
+
+class SMRD(Election):
+    """
+    Sequential Multiwinner Random Dictator (SMRD) election method.
     Elect k candidates from k randomly chosen 'dictators'.
     From each dictator elect their first non-elected candidate.
-
-    Args:
-        profile (np.ndarray): (candidates x voters) Preference Profile.
-        k (int): Number of candidates to elect
-
-    Returns:
-        elected (np.ndarray): Winning candidates
     """
-    if not approve_profile(profile):
-        raise ValueError("Profile not in correct form.")
+    def __init__(self):
+        pass
     
-    m, n = profile.shape
-    if n < k:
-        raise ValueError("Assumes n >= k")
-    elected = np.zeros(k, dtype=int) - 1
-    elected_mask = np.zeros(m, dtype=bool)
-    dictators = np.random.choice(range(n), size=k, replace=False)
+    def elect(self, profile : NDArray, k : int) -> NDArray:
+        """
+        Elect k candidates with the SMRD method.
 
-    for i in range(k):
-        dictator = dictators[i]
+        Args:
+            profile (np.ndarray): (candidates x voters) Preference Profile.
+            k (int): Number of candidates to elect
 
-        # find next available candidate:
-        for j in range(m):
-            choice = profile[j, dictator]
-            if not elected_mask[choice]:
-                elected[i] = choice
-                elected_mask[choice] = True
-                break
+        Returns:
+            elected (np.ndarray): Winning candidates
+        """
+        if not self._approve_profile(profile):
+            raise ValueError("Profile not in correct form.")
+        
+        m, n = profile.shape
+        if n < k:
+            raise ValueError("Assumes n >= k")
+        elected = np.zeros(k, dtype=int) - 1
+        elected_mask = np.zeros(m, dtype=bool)
+        dictators = np.random.choice(range(n), size=k, replace=False)
 
-    return elected
+        for i in range(k):
+            dictator = dictators[i]
+
+            # find next available candidate:
+            for j in range(m):
+                choice = profile[j, dictator]
+                if not elected_mask[choice]:
+                    elected[i] = choice
+                    elected_mask[choice] = True
+                    break
+
+        return elected
 
 
-def OMRD(profile, k):
+####################################################################################################
+
+class OMRD:
     """
+    One-Shot Multiwinner Random Dictator (OMRD) election method.
     Chooses a single random dictator and lets them elect their top k
     preferences.
-
-    Args:
-        profile (np.ndarray): (candidates x voters) Preference Profile.
-        k (int): Number of candidates to elect
-
-    Returns:
-        elected (np.ndarray): Winning candidates
     """
-    if not approve_profile(profile):
-        raise ValueError("Profile not in correct form.")
+    def __init__(self):
+        pass 
     
-    m, n = profile.shape
-    dictator = np.random.choice(range(n))
-    elected = profile[:k, dictator]
-    return elected
+    def elect(self, profile : NDArray, k : int) -> NDArray:
+        """
+        Elect k winners with the OMRD method.
+        
+        Args:
+            profile (np.ndarray): (candidates x voters) Preference Profile.
+            k (int): Number of candidates to elect
+
+        Returns:
+            elected (np.ndarray): Winning candidates
+        """
+        if not self._approve_profile(profile):
+            raise ValueError("Profile not in correct form.")
+        
+        m, n = profile.shape
+        dictator = np.random.choice(range(n))
+        elected = profile[:k, dictator]
+        return elected
 
 
-def DMRD(profile, k, rho=1):
+####################################################################################################
+
+
+class DMRD:
     """
+    Discounted Multiwinner Random Dictator (DMRD) election method.
     Elect k candidates with k iterations of Random Dictator.
     At each iteration, randomly choose a voter and elect its first choice.
-    Then discounts or reweights the voting power of voters who voted for that candidate by
+    Then discount or reweight the voting power of voters who voted for that candidate by
     a factor of rho.
 
     Args:
-        profile (np.ndarray): (candidates x voters) Preference Profile.
-        k (int): Number of candidates to elect
-        rho (float): Reweighting factor
-
-    Returns:
-        elected (np.ndarray): Winning candidates
+        rho (float, optional): Reweighting factor. Default is 1.
     """
-    if not approve_profile(profile):
-        raise ValueError("Profile not in correct form.")
-    
-    m, n = profile.shape
-    voter_probability = np.ones(n) / n
-    voter_indices = np.zeros(n, dtype=int)
-    elected = np.zeros(k, dtype=int) - 1
-    elected_mask = np.zeros(m, dtype=bool)
+    def __init__(self, rho : int = 1):
+        self.rho = rho
+        
+    def elect(self, profile : NDArray, k : int) -> NDArray:
+        """
+        Elect k candidates with the DMRD method.
 
-    for i in range(k):
-        dictator = np.random.choice(range(n), p=voter_probability)
+        Args:
+            profile (np.ndarray): (candidates x voters) Preference Profile.
+            k (int): Number of candidates to elect
 
-        # find next available candidate:
-        winner = -1
-        for j in range(m):
-            choice = profile[j, dictator]
-            if not elected_mask[choice]:
-                winner = choice
-                elected[i] = choice
-                elected_mask[choice] = True
-                break
+        Returns:
+            elected (np.ndarray): Winning candidates
+        """
+        if not self._approve_profile(profile):
+            raise ValueError("Profile not in correct form.")
+        
+        m, n = profile.shape
+        voter_probability = np.ones(n) / n
+        voter_indices = np.zeros(n, dtype=int)
+        elected = np.zeros(k, dtype=int) - 1
+        elected_mask = np.zeros(m, dtype=bool)
 
-        # Find who voted for the winner
-        first_choice_votes = profile[voter_indices, np.arange(n)]
-        mask = first_choice_votes == winner
+        for i in range(k):
+            dictator = np.random.choice(range(n), p=voter_probability)
 
-        # Adjusts voter probability for the next round
-        voter_probability[mask] *= rho
-        voter_probability /= np.sum(voter_probability)
+            # find next available candidate:
+            winner = -1
+            for j in range(m):
+                choice = profile[j, dictator]
+                if not elected_mask[choice]:
+                    winner = choice
+                    elected[i] = choice
+                    elected_mask[choice] = True
+                    break
 
-        # Effectively removes winning candidate from profile
-        voter_indices[mask] += 1
+            # Find who voted for the winner
+            first_choice_votes = profile[voter_indices, np.arange(n)]
+            mask = first_choice_votes == winner
 
-    return elected
+            # Adjusts voter probability for the next round
+            voter_probability[mask] *= self.rho
+            voter_probability /= np.sum(voter_probability)
+
+            # Effectively removes winning candidate from profile
+            voter_indices[mask] += 1
+
+        return elected
 
 
+####################################################################################################
+
+'''
+# Not Currently in Use:
 def PRD(profile, k, p=None, q=None):
     """
     Elect k candidates with k iterations of Proportional Random Dictator (PRD).
@@ -828,3 +1074,4 @@ def PRD(profile, k, p=None, q=None):
         voter_indices[mask] += 1
 
     return elected
+'''

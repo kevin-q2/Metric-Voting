@@ -21,8 +21,7 @@ from .elections import (
 
 from .spatial_generation import Spatial, GroupSpatial, ProbabilisticGroupSpatial
 
-from .utils import (
-    euclidean_distance,
+from .measurements import (
     cost_array,
     euclidean_cost_array,
     cost, 
@@ -31,10 +30,12 @@ from .utils import (
     proportional_assignment_cost,
     group_inefficiency,
     random_group_inefficiency,
-    greedy_group_inefficiency,
-    random_greedy_group_inefficiency,
-    weighted_random_group_inefficiency,
+)
+
+from .utils import (
+    euclidean_distance,
     borda_matrix,
     remove_candidates,
     uniform_profile,
+    random_voter_bloc,
 )

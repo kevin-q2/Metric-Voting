@@ -22,7 +22,7 @@ def test_fp_tie_break(profile_with_fp_tie):
     assert 450 < counts[1] and counts[1] < 550
 
 
-def test_bloc_tie_break(profile_with_bloc_tie):
+def test_tie_break(profile_with_bloc_tie):
     E = Bloc()
     winners = np.zeros((1000, 3))
 
