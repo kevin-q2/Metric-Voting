@@ -919,7 +919,7 @@ class SMRD(Election):
 
 ####################################################################################################
 
-class OMRD:
+class OMRD(Election):
     """
     One-Shot Multiwinner Random Dictator (OMRD) election method.
     Chooses a single random dictator and lets them elect their top k
@@ -951,7 +951,7 @@ class OMRD:
 ####################################################################################################
 
 
-class DMRD:
+class DMRD(Election):
     """
     Discounted Multiwinner Random Dictator (DMRD) election method.
     Elect k candidates with k iterations of Random Dictator.

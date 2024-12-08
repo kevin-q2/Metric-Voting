@@ -218,3 +218,39 @@ def random_group_inefficiency(
         group_inefficiency(cost_arr, winner_indices, random_bloc_labels, bloc_label=1, size=None), 
         random_bloc
     )
+    
+    
+def worst_random_group_inefficiency(
+    n_samples : int,
+    cost_arr: NDArray, 
+    winner_indices: NDArray, 
+    weights : Optional[NDArray] = None
+) -> Tuple[float, NDArray]:
+    """
+    Over a series of samples, computes the group inefficiency score for a random group, 
+    and outputs the sample that gave the worst ineffciency. 
+    
+    Args:
+        n_samples (int): Number of samples to take.
+        cost_arr (np.ndarray): (m x n) Array of costs with 
+            each entry i,j computed as the distance from candidate i to voter j. 
+        winner_indices (np.ndarray[int]): Length k array of winning candidate indices.
+        weights (np.ndarray, optional): Voter probabilities of selection. Defaults to None, 
+            in which case a greedy heuristic is used. 
+    """
+    worst_score = 0
+    worst_bloc = None 
+    
+    for _ in range(n_samples):
+        rand_t = np.random.randint(1, len(winner_indices) + 1)
+        score, bloc = random_group_inefficiency(
+            cost_arr, 
+            winner_indices, 
+            t = rand_t, 
+            weights = weights
+        )
+        if score > worst_score:
+            worst_score = score
+            worst_bloc = bloc
+    
+    return worst_score, worst_bloc

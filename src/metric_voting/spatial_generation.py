@@ -14,7 +14,6 @@ class Spatial:
     with the sampled positions (respects distances). 
 
     Args:
-        m (int): Number of candidates.
         voter_dist_fn (Callable[..., np.ndarray], optional): Distribution to sample a single
             voter's position from, defaults to uniform distribution.
         voter_dist_fn_params: (dict[str, Any], optional): Parameters to be passed to
@@ -30,7 +29,6 @@ class Spatial:
             defaults to euclidean distance.
 
     Attributes:
-        m (int): Number of candidates.
         voter_dist_fn (Callable[..., np.ndarray], optional): Distribution to sample a single
             voter's position from, defaults to uniform distribution.
         voter_dist_fn_params: (dict[str, Any], optional): Parameters to be passed to

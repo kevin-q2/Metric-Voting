@@ -30,6 +30,7 @@ from .measurements import (
     proportional_assignment_cost,
     group_inefficiency,
     random_group_inefficiency,
+    worst_random_group_inefficiency,
 )
 
 from .utils import (
@@ -38,4 +39,9 @@ from .utils import (
     remove_candidates,
     uniform_profile,
     random_voter_bloc,
+)
+
+from .plotting import (
+    plot_winner_distribution,
+    plot_bloc_distribution,
 )
