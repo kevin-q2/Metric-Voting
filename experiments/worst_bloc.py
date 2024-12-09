@@ -3,8 +3,8 @@ from metric_voting.measurements import euclidean_cost_array, worst_random_group_
 
 
 np.random.seed(918717)
-input_file = '../data/2bloc_new.npz'
-output_file = '../data/2bloc_worst.npz'
+input_file = 'data/2bloc_new.npz'
+output_file = 'data/2bloc_worst.npz'
 
 loaded_data = np.load(input_file)
 result_dict = {key: loaded_data[key] for key in loaded_data.files}
@@ -20,7 +20,7 @@ worst_bloc_dict = {
 
 elections = [_ for _ in result_dict.keys() if _ not in ['voters', 'candidates', 'labels']]
 n_samples = result_dict[elections[0]].shape[0]
-samples_per = 10
+samples_per = 1000
 
 for e in elections:
     worst_bloc_samples = []

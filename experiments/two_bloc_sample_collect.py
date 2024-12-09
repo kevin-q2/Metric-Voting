@@ -24,7 +24,7 @@ for i,mean in enumerate(means):
 for i,std in enumerate(stds):
     voter_params[i]['scale'] = std
     
-candidate_params = {'low': -8, 'high': 8, 'size': 2}
+candidate_params = [{'low': -8, 'high': 8, 'size': 2}]
 
 distance = lambda point1, point2: np.linalg.norm(point1 - point2)
 
@@ -40,8 +40,8 @@ two_party_generator = GroupSpatial(
 
 # Define elections
 elections_dict = {SNTV:{}, Bloc:{}, Borda:{}, STV:{'transfer_type' : 'fractional'},
-                 ChamberlinCourant:{'solver' : 'PULP_CBC_CMD'}, GreedyCC:{},
-                  Monroe:{'solver' : 'PULP_CBC_CMD'}, 
+                 ChamberlinCourant:{'solver' : 'GUROBI_CMD'}, GreedyCC:{},
+                  Monroe:{'solver' : 'GUROBI_CMD'}, 
                   PluralityVeto:{}, ExpandingApprovals: {},
                  SMRD:{}, OMRD:{}, DMRD:{'rho': 0.5}}
 
@@ -52,7 +52,7 @@ n_samples = 1000
 np.random.seed(918717)
 
 # and sample from them
-f = 'metric_voting/data/2bloc_new.npz'
+f = 'data/2bloc_new.npz'
 
 generator_input = [
     {'voter_group_sizes': two_party_G,
