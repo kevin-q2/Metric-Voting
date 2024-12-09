@@ -28,7 +28,7 @@ for e in elections:
         V = voters[j]
         C = candidates[j]
         cst_array = euclidean_cost_array(V,C)
-        winner_indices = np.where(result_dict[e][j])
+        winner_indices = np.where(result_dict[e][j])[0]
         worst_score, worst_bloc = worst_random_group_inefficiency(
             samples_per,
             cst_array,
