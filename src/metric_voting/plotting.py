@@ -55,7 +55,7 @@ def plot_winner_distribution(
     elections = [_ for _ in results.keys() if _ not in ['voters', 'candidates', 'labels']]
     voter_color = colors[0]
     candidate_color = colors[1]
-    winner_color = colors[1]
+    winner_color = colors[2]
     
     fig, axes = plt.subplots(len(elections) + 1, 3, **fig_params)
     for i, ax in enumerate(axes.flat):
@@ -217,7 +217,7 @@ def plot_bloc_distribution(
     elections = [_ for _ in results.keys() if _ not in ['voters', 'candidates', 'labels']]
     voter_color = colors[0]
     candidate_color = colors[1]
-    winner_color = colors[1]
+    winner_color = colors[2]
     
     fig, axes = plt.subplots(len(elections) + 1, 3, **fig_params)
     for i, ax in enumerate(axes.flat):

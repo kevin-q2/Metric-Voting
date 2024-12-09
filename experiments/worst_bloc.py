@@ -35,7 +35,7 @@ for e in elections:
             winner_indices
         )
         worst_mask = np.zeros(V.shape[0], dtype = bool)
-        worst_mask[winner_indices] = True
+        worst_mask[worst_bloc] = True
         worst_bloc_samples.append(worst_mask)
         
     worst_bloc_dict[e] = np.array(worst_bloc_samples)
