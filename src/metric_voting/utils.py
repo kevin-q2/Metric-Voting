@@ -16,6 +16,21 @@ def euclidean_distance(x, y):
     return np.linalg.norm(x - y, ord=2)
 
 
+def cost_array_to_ranking(cst_array: NDArray) -> NDArray:
+    """
+    Given a cost array, returns a ranking of candidates for each voter.
+    Specifically, for an (m x n) cost array, the output is an (m x n) ranking matrix
+    where entry [i,j] stores the rank of candidate i for voter j.
+
+    Args:
+        cst_array (np.ndarray): (m x n) Cost array.
+
+    Returns:
+        (np.ndarray): Computed (m x n) ranking matrix.
+    """
+    return np.argsort(cst_array, axis=0)
+
+
 def borda_matrix(
     profile: NDArray, scoring_scheme: Callable[[int, int], float] = lambda x, y: x - y
 ) -> NDArray:

@@ -1,7 +1,7 @@
 import numpy as np
 import math
 from numpy.typing import NDArray
-from typing import Callable, Tuple, Any, Optional, Union
+from typing import Callable, Tuple, Any, Optional, Union, List, Set
 from .utils import euclidean_distance, random_voter_bloc
 
 
@@ -18,7 +18,7 @@ def cost_array(
     Args:
         voter_positions (np.ndarray): (n x d) Array of voter positions in a metric space.
         candidate_positions (np.ndarray): (m x d) Array of candidate positions in a metric space.
-        distance (callable, optional): Callable distance function which should
+        distance_fn (callable, optional): Callable distance function which should
             take as input two d dimensional vectors and output a real number,
             defaults to euclidean_distance (see euclidean_distance() above for a reference format).
 
@@ -254,3 +254,48 @@ def worst_random_group_inefficiency(
             worst_bloc = bloc
     
     return worst_score, worst_bloc
+
+
+
+def q_costs(
+    q : int,
+    cst_array : NDArray
+):
+    """
+    Given a set of voter and candidate positions along with a distance function,
+    returns a length n array with each entry i storing the
+    distance from voter i to its qth closest candidate.
+
+    Args:
+        q (int): qth closest candidate to compute distance for. 
+        cst_array (np.ndarray): (m x n) Array of costs with 
+            each entry i,j computed as the distance from candidate i to voter j. 
+
+    Returns:
+        (np.ndarray): Size n array of distances from voters to candidates.
+    """
+    return np.sort(cst_array, axis = 0)[q, :]
+
+
+def q_cost_array(
+    q : int,
+    cst_array : NDArray,
+    candidate_subsets : List[Set[int]]
+):
+    """
+    Given a list of candidate subsets, computes the q cost array for each subset.
+
+    Args:
+        q (int): qth closest candidate to compute distance for. 
+        cst_array (np.ndarray): (m x n) Array of costs with 
+            each entry i,j computed as the distance from candidate i to voter j. 
+        candidate_subsets (List[Set[int]]): List of candidate subsets to compute q costs for.
+
+    Returns:
+        (np.ndarray): Size n array of distances from voters to candidates.
+    """
+    q_cst_array = np.zeros((len(candidate_subsets), cst_array.shape[1]))
+    for i, subset in enumerate(candidate_subsets):
+        q_cst_array[i, :] = q_costs(q, cst_array[list(subset), :])
+    return q_cst_array
+    

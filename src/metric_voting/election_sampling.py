@@ -3,6 +3,9 @@ from multiprocessing import Pool
 from typing import Dict, Callable, Any, List, Tuple
 from numpy.typing import NDArray
 
+from .measurements import euclidean_cost_array, q_cost_array
+from .utils import cost_array_to_ranking
+
 
 
 
@@ -47,7 +50,18 @@ def election_sample(
     winners = {}
 
     for E, params in elections_dict.items():
-        elects = E(**params).elect(profile=profile, k=k)
+        if E.__name__ == "PluralityVeto":
+            # Assuming Euclidean Distance here!!
+            cst_array = euclidean_cost_array(voter_positions, candidate_positions)
+            candidate_subsets = [set(_) for _ in profile[:k,:].T]
+            q_cst_array = q_cost_array(params['q'], cst_array, candidate_subsets)
+            q_profile = cost_array_to_ranking(q_cst_array)
+            elect_subset = E().elect(profile=q_profile, k=1)[0]
+            elects = np.array(list(candidate_subsets[elect_subset]))
+            
+        else:
+            elects = E(**params).elect(profile=profile, k=k)
+            
         winners[E.__name__] = elects
 
     return voter_positions, candidate_positions, winners, voter_labels

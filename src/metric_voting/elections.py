@@ -663,7 +663,8 @@ class PluralityVeto(Election):
     (https://arxiv.org/abs/2206.07098)
     
     NOTE: That this is an extension for what is really designed to be a single winner 
-    voting rule. 
+    voting rule. To really use this as a multiwinner rule, need to construct a special 
+    preference profile. Please see the example notebooks for more detail.
     """
     def __init__(self):
         self.profile = None
@@ -744,29 +745,6 @@ class PluralityVeto(Election):
 
         elected = np.where(self.eliminated == 0)[0]
         return elected
-    
-
-####################################################################################################
-
-
-class MultiPluralityVeto(Election):
-    """
-    Elect k candidates with the Multiwinner Plurality Veto mechanism. Each voter 
-    ranks potential winner sets, which the mechanism then treats like individual 
-    candidates. The mechanism then elects a winner set by applying the 
-    single winner Plurality Veto rule to this ranking.
-    
-    For more information please see the paper:
-    "Plurality Veto: A Simple Voting Rule Achieving Optimal Metric Distortion"
-    - Kizilkaya, Kempe (2023)
-    (https://arxiv.org/abs/2206.07098)
-    """
-    
-    def __init__(self):
-        pass
-    
-    def elect(profile : NDArray, k : int) -> NDArray:
-        pass
 
 
 ####################################################################################################

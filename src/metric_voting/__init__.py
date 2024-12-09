@@ -31,10 +31,13 @@ from .measurements import (
     group_inefficiency,
     random_group_inefficiency,
     worst_random_group_inefficiency,
+    q_costs, 
+    q_cost_array,
 )
 
 from .utils import (
     euclidean_distance,
+    cost_array_to_ranking,
     borda_matrix,
     remove_candidates,
     uniform_profile,

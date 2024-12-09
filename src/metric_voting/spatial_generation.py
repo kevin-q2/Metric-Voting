@@ -1,5 +1,6 @@
 import numpy as np
-from .utils import euclidean_distance
+from .measurements import cost_array
+from .utils import euclidean_distance, cost_array_to_ranking
 from numpy.typing import NDArray
 from typing import Callable, Dict, Tuple, Any, List, Optional, Union
 
@@ -135,14 +136,8 @@ class Spatial:
         voter_labels = np.zeros(n)
         
         # Compute Preference Profile
-        profile = np.zeros((m, n), dtype=np.int64)
-        for i in range(n):
-            distances = [
-                self.distance_fn(voter_positions[i, :], candidate_positions[j, :])
-                for j in range(m)
-            ]
-            ranking = np.argsort(distances)
-            profile[:, i] = ranking
+        cst_array = cost_array(voter_positions, candidate_positions, self.distance_fn)
+        profile = cost_array_to_ranking(cst_array)
 
         return profile, candidate_positions, voter_positions, voter_labels
 
@@ -374,14 +369,9 @@ class GroupSpatial:
         voter_labels = np.array([item for sublist in voter_labels for item in sublist])
 
         # Compute Preference Profile
-        profile = np.zeros((m, n), dtype=np.int64)
-        for i in range(n):
-            distances = [
-                self.distance_fn(voter_positions[i, :], candidate_positions[j, :])
-                for j in range(m)
-            ]
-            ranking = np.argsort(distances)
-            profile[:, i] = ranking
+        cst_array = cost_array(voter_positions, candidate_positions, self.distance_fn)
+        profile = cost_array_to_ranking(cst_array)
+
 
         return profile, candidate_positions, voter_positions, voter_labels
 
