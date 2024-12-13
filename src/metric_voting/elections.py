@@ -2,7 +2,7 @@ import numpy as np
 from numpy.typing import NDArray
 from typing import Callable, Dict, Tuple, Any, List, Optional, Union
 import pulp
-from .utils import remove_candidates, borda_matrix
+from .utils import tiebreak, remove_candidates, borda_matrix
 
 
 ####################################################################################################
@@ -29,7 +29,7 @@ class Election:
         return np.all(np.isin(np.arange(len(ranking)), np.unique(ranking)))
 
 
-    def _approve_profile(self, profile: NDArray) -> bool:
+    def _approve_profile(self, profile: NDArray, k : int) -> bool:
         """
         Checks if the input profile is an ranked preference profile in 
         correct form. Specifically, for our simplified models, this means 
@@ -37,11 +37,18 @@ class Election:
 
         Args:
             profile (np.ndarray): (candidates x voters) Preference profile matrix.
+            
+            k (int): Number of candidates to elect.
 
         Returns:
             (bool): True if the profile is approved, False otherwise.
         """
-        return np.all(np.apply_along_axis(self._is_complete_ranking, axis = 0, arr = profile))
+        _,n = profile.shape
+        if n < k:
+            raise ValueError("Requested more elected seats than there are voters!")
+        
+        if not np.all(np.apply_along_axis(self._is_complete_ranking, axis = 0, arr = profile)):
+            raise ValueError("Profile not in correct form.")
             
     
     def elect(profile: NDArray, k: int) -> NDArray:
@@ -65,6 +72,8 @@ class Election:
 class SNTV(Election):
     """
     Single Non-Transferable Vote (Plurality) election.
+    
+    NOTE: Should this elect random candidates if it can't find k winners??
     """
     def __init__(self):
         pass 
@@ -81,18 +90,11 @@ class SNTV(Election):
         Returns:
             elected (np.ndarray): Winning candidates
         """
-        if not self._approve_profile(profile):
-            raise ValueError("Profile not in correct form.")
-        
+        self._approve_profile(profile, k)        
         first_choice_votes = profile[0, :]
         cands, counts = np.unique(first_choice_votes, return_counts=True)
-        
-        # break ties randomly with noise
-        counts = counts.astype(float)
-        counts += np.random.uniform(0, 1, len(counts))
-        
-        # NOTE: Should this elect random candidates if it can't find k winners??
-        elected = cands[np.argsort(counts)[::-1][: min(k, len(cands))]]
+        ranking = tiebreak(counts)[::-1]
+        elected = cands[ranking[: min(k, len(cands))]]
         return elected
 
 
@@ -128,9 +130,7 @@ class CommitteeScoring(Election):
             elected (NDArray): Winning candidates
         """
         
-        if not self._approve_profile(profile):
-            raise ValueError("Profile not in correct form.")
-        
+        self._approve_profile(profile, k)
         m, n = profile.shape
         candidate_scores = np.zeros(m)
 
@@ -138,12 +138,9 @@ class CommitteeScoring(Election):
             for j in range(m):
                 c = profile[j, i]
                 candidate_scores[c] += self.scoring_scheme(m, k, j + 1)
-                
-        # break ties randomly with noise
-        candidate_scores = candidate_scores.astype(float)
-        candidate_scores += np.random.uniform(0, 1, len(candidate_scores))
 
-        elected = np.argsort(candidate_scores)[::-1][:k]
+        ranking = tiebreak(candidate_scores)[::-1]
+        elected = ranking[:k]
         return elected
     
     
@@ -190,10 +187,16 @@ class STV(Election):
 
     Args:
         transfer_type (str): Type of vote transfer. 
-            Options: 'fractional', 'weighted-fractional', 'cambridge.'
+            Options: 'fractional', 'weighted-fractional', 'cambridge.' Defaults to 
+            'weighted-fractional'.
+        tiebreak_type (str) : Method for breaking ties. Options: 'fpv_random', 'random'.
+            Defaults to 'fpv_random', which breaks ties by comparing first round scores, 
+            and if that fails, breaks ties randomly. Otherwise, the 'random' option breaks
+            ties randomly.
 
     Attributes:
         transfer_type (str): Type of vote transfer.
+        tiebreak_type (str): Method for breaking ties.
         verbose (bool): Print election details.
         m (int): Number of candidates.
         n (int): Number of voters.
@@ -204,10 +207,23 @@ class STV(Election):
         voter_weights (NDArray): Weights for each voter's votes.
         elected_count (int): Number of candidates currently elected.
         eliminated_count (int): Number of candidates currently eliminated.
+        first_round_scores (NDArray): Scores for the first round of candidates. 
     """
     
-    def __init__(self, transfer_type : str = 'fractional', verbose : bool = False):
+    def __init__(
+        self,
+        transfer_type : str = 'weighted-fractional',
+        tiebreak_type : str = 'fpv_random',
+        verbose : bool = False,
+    ):
+        if transfer_type not in ['fractional', 'weighted-fractional', 'cambridge']:
+            raise ValueError("Invalid transfer type.")
         self.transfer_type = transfer_type
+        
+        self.tiebreak_type = tiebreak_type
+        if tiebreak_type not in ['fpv_random', 'random']:
+            raise ValueError("Invalid tiebreak type.")
+        
         self.verbose = verbose
         self.m = None
         self.n = None
@@ -218,6 +234,7 @@ class STV(Election):
         self.voter_weights = None
         self.elected_count = None
         self.eliminated_count = None
+        self.first_round_scores = None
         
     
     def elect(self, profile : NDArray, k : int) -> NDArray: 
@@ -231,9 +248,7 @@ class STV(Election):
         Returns:
             elected (NDArray): Winning candidates
         """
-        if not self._approve_profile(profile):
-            raise ValueError("Profile not in correct form.")
-        
+        self._approve_profile(profile, k)
         self.profile = profile
         self.k = k
         self.m, self.n = profile.shape
@@ -255,6 +270,9 @@ class STV(Election):
             
         while self.elected_count < self.k and self.eliminated_count < self.m - self.k:
             candidate_scores, candidate_voters, satisfies_quota = self.count()
+            
+            if self.elected_count + self.eliminated_count == 0:
+                self.first_round_scores = candidate_scores
             
             if self.verbose:
                 print("Round: " + str(self.elected_count + self.eliminated_count))
@@ -345,12 +363,11 @@ class STV(Election):
         Returns:
             eliminated (int): Index of the eliminated candidate.
         """
-        
-        random_tiebreakers = np.random.rand(self.m)
-        structured_array = np.core.records.fromarrays(
-            [candidate_scores, random_tiebreakers], names="scores,rand"
-        )
-        score_sort = np.argsort(structured_array, order=["scores", "rand"])
+        if self.tiebreak_type == 'fpv_random':
+            score_sort = tiebreak(candidate_scores, self.first_round_scores)
+        else:
+            score_sort = tiebreak(candidate_scores)
+            
         
         eliminated = None
         for e in score_sort:
@@ -440,7 +457,7 @@ class ChamberlinCourant(Election):
     (where assignment scores are calculated with the borda score).
     
     NOTE: As far as I can tell, these solvers output deterministic answers,
-    even in cases where there are multiple optimal solutions...
+    even in cases where there are multiple optimal solutions...Not sure how to handle this.
     
     Args:
         solver (str, optional): Solver for the integer linear program. These are taken 
@@ -469,9 +486,7 @@ class ChamberlinCourant(Election):
         Returns:
             elected (np.ndarray): Winning candidates
         """
-        if not self._approve_profile(profile):
-            raise ValueError("Profile not in correct form.")
-        
+        self._approve_profile(profile, k)       
         m, n = profile.shape
         B = borda_matrix(profile).T  # n x m matrix after transpose
 
@@ -518,7 +533,7 @@ class Monroe(Election):
     exactly floor(n/k) or ceiling(n/k) voters.
     
     NOTE: As far as I can tell, these solvers output deterministic answers,
-    even in cases where there are multiple optimal solutions...
+    even in cases where there are multiple optimal solutions...Not sure how to handle this.
     
     Args:
         solver (str, optional): Solver for the integer linear program. These are taken 
@@ -545,9 +560,7 @@ class Monroe(Election):
         Returns:
             elected (np.ndarray): Winning candidates
         """
-        if not self._approve_profile(profile):
-            raise ValueError("Profile not in correct form.")
-        
+        self._approve_profile(profile, k)
         m, n = profile.shape
         B = borda_matrix(profile).T  # n x m matrix after transpose
 
@@ -622,9 +635,7 @@ class GreedyCC(Election):
         Returns:
             elected (np.ndarray): Winning candidates
         """
-        if not self._approve_profile(profile):
-            raise ValueError("Profile not in correct form.")
-        
+        self._approve_profile(profile, k)
         m, n = profile.shape
         B = borda_matrix(profile)
 
@@ -639,8 +650,10 @@ class GreedyCC(Election):
                     scores[i] = score_gain
 
             # Break ties randomly
-            scores += np.random.uniform(0, 1, len(scores))
-            max_cand = np.argmax(scores)
+            #scores += np.random.uniform(0, 1, len(scores))
+            #max_cand = np.argmax(scores)
+            ranking = tiebreak(scores)
+            max_cand = ranking[-1]
             is_elected[max_cand] = True
             voter_assign_scores = np.maximum(voter_assign_scores, B[max_cand, :])
 
@@ -715,9 +728,7 @@ class PluralityVeto(Election):
             elected (np.ndarray): Winning candidates
         """
         
-        if not self._approve_profile(profile):
-            raise ValueError("Profile not in correct form.")
-        
+        self._approve_profile(profile, k)
         self.profile = profile
         self.k = k
         self.m, self.n = profile.shape
@@ -822,9 +833,7 @@ class ExpandingApprovals(Election):
         Returns:
             elected (np.ndarray): Winning candidates
         """
-        if not self._approve_profile(profile):
-            raise ValueError("Profile not in correct form.")
-        
+        self._approve_profile(profile, k)
         self.profile = profile
         m, n = profile.shape
         self.quota = np.ceil(n / k)
@@ -871,19 +880,14 @@ class SMRD(Election):
         Returns:
             elected (np.ndarray): Winning candidates
         """
-        if not self._approve_profile(profile):
-            raise ValueError("Profile not in correct form.")
-        
+        self._approve_profile(profile, k)        
         m, n = profile.shape
-        if n < k:
-            raise ValueError("Assumes n >= k")
         elected = np.zeros(k, dtype=int) - 1
         elected_mask = np.zeros(m, dtype=bool)
         dictators = np.random.choice(range(n), size=k, replace=False)
 
         for i in range(k):
             dictator = dictators[i]
-
             # find next available candidate:
             for j in range(m):
                 choice = profile[j, dictator]
@@ -917,9 +921,7 @@ class OMRD(Election):
         Returns:
             elected (np.ndarray): Winning candidates
         """
-        if not self._approve_profile(profile):
-            raise ValueError("Profile not in correct form.")
-        
+        self._approve_profile(profile, k)    
         m, n = profile.shape
         dictator = np.random.choice(range(n))
         elected = profile[:k, dictator]
@@ -943,6 +945,15 @@ class DMRD(Election):
     def __init__(self, rho : int = 1):
         self.rho = rho
         
+    def update_indices(self):
+        """
+        Updates the first place vote indices of voters in the preference profile, to account 
+        for candidates who have already been elected.
+        """
+        for i in range(self.n):
+            while self.elected_mask[self.profile[self.voter_indices[i], i]] == 1:
+                self.voter_indices[i] += 1
+        
     def elect(self, profile : NDArray, k : int) -> NDArray:
         """
         Elect k candidates with the DMRD method.
@@ -954,30 +965,22 @@ class DMRD(Election):
         Returns:
             elected (np.ndarray): Winning candidates
         """
-        if not self._approve_profile(profile):
-            raise ValueError("Profile not in correct form.")
-        
-        m, n = profile.shape
-        voter_probability = np.ones(n) / n
-        voter_indices = np.zeros(n, dtype=int)
+        self._approve_profile(profile, k)
+        self.m, self.n = profile.shape
+        self.profile = profile
+        self.voter_indices = np.zeros(self.n, dtype=int)
+        self.elected_mask = np.zeros(self.m, dtype=bool)
         elected = np.zeros(k, dtype=int) - 1
-        elected_mask = np.zeros(m, dtype=bool)
+        voter_probability = np.ones(self.n) / self.n
 
         for i in range(k):
-            dictator = np.random.choice(range(n), p=voter_probability)
-
-            # find next available candidate:
-            winner = -1
-            for j in range(m):
-                choice = profile[j, dictator]
-                if not elected_mask[choice]:
-                    winner = choice
-                    elected[i] = choice
-                    elected_mask[choice] = True
-                    break
+            dictator = np.random.choice(range(self.n), p=voter_probability)
+            winner = self.profile[self.voter_indices[dictator], dictator]
+            elected[i] = winner
+            self.elected_mask[winner] = True
 
             # Find who voted for the winner
-            first_choice_votes = profile[voter_indices, np.arange(n)]
+            first_choice_votes = self.profile[self.voter_indices, np.arange(self.n)]
             mask = first_choice_votes == winner
 
             # Adjusts voter probability for the next round
@@ -985,7 +988,7 @@ class DMRD(Election):
             voter_probability /= np.sum(voter_probability)
 
             # Effectively removes winning candidate from profile
-            voter_indices[mask] += 1
+            self.update_indices()
 
         return elected
 

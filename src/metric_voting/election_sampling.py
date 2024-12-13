@@ -51,6 +51,7 @@ def election_sample(
 
     for E, params in elections_dict.items():
         if E.__name__ == "PluralityVeto":
+            # Form the multi-winner plurality veto profile.
             # Assuming Euclidean Distance here!!
             cst_array = euclidean_cost_array(voter_positions, candidate_positions)
             candidate_subsets = [set(_) for _ in profile[:k,:].T]

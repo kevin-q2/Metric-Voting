@@ -18,12 +18,12 @@ def test_ranking_with_repeats():
     
 def test_basic_profile(basic_profile):
     E = Election()
-    assert E._approve_profile(basic_profile)
+    assert E._approve_profile(basic_profile, k=1)
     
 def test_incomplete_profile(incomplete_profile):
     E = Election()
-    assert not E._approve_profile(incomplete_profile)
+    assert not E._approve_profile(incomplete_profile, k=1)
     
 def test_profile_with_repeats(profile_with_repeats):
     E = Election()
-    assert not E._approve_profile(profile_with_repeats)
+    assert not E._approve_profile(profile_with_repeats, k=1)

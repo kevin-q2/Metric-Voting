@@ -39,14 +39,14 @@ two_party_generator = GroupSpatial(
 )
 
 # Define elections
-elections_dict = {SNTV:{}, Bloc:{}, Borda:{}, STV:{'transfer_type' : 'fractional'},
+elections_dict = {SNTV:{}, Bloc:{}, Borda:{}, STV:{'transfer_type' : 'weighted-fractional'},
                  ChamberlinCourant:{'solver' : 'GUROBI_CMD'}, GreedyCC:{},
                   Monroe:{'solver' : 'GUROBI_CMD'}, 
                   PluralityVeto:{}, ExpandingApprovals: {},
                  SMRD:{}, OMRD:{}, DMRD:{'rho': 0.5}}
 
 # Number of samples to use
-n_samples = 1000
+n_samples = 10000
 
 # set the seed for deterministic results:
 np.random.seed(918717)

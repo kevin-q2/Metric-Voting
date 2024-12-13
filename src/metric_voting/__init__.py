@@ -38,6 +38,7 @@ from .measurements import (
 from .utils import (
     euclidean_distance,
     cost_array_to_ranking,
+    tiebreak,
     borda_matrix,
     remove_candidates,
     uniform_profile,
