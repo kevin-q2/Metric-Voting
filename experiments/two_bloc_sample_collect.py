@@ -42,7 +42,7 @@ two_party_generator = GroupSpatial(
 elections_dict = {SNTV:{}, Bloc:{}, Borda:{}, STV:{'transfer_type' : 'weighted-fractional'},
                  ChamberlinCourant:{'solver' : 'GUROBI_CMD'}, GreedyCC:{},
                   Monroe:{'solver' : 'GUROBI_CMD'}, 
-                  PluralityVeto:{}, ExpandingApprovals: {},
+                  PluralityVeto:{'q': 2}, ExpandingApprovals: {},
                  SMRD:{}, OMRD:{}, DMRD:{'rho': 0.5}}
 
 # Number of samples to use
