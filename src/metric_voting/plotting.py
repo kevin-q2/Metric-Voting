@@ -122,7 +122,7 @@ def plot_winner_distribution(
 
     # Plot the winner distributions for each election method:
     Candidates = results['candidates']
-    for i,name in enumerate(elections):            
+    for i,name in enumerate(elections):     
         ax_idx = i + 1
 
         # Gather data:
@@ -142,7 +142,15 @@ def plot_winner_distribution(
                     thresh=0.1, levels=10, alpha = 1, ax = axes[ax_idx][0])
         sns.kdeplot(data=winner_stack_sample, x='x', y='y', color = winner_color, fill=False,
                     thresh=0.1, levels=10, alpha = 0.7, ax = axes[ax_idx][0])
-        axes[ax_idx][0].set_ylabel(name)
+        
+        if name == 'ChamberlinCourant':
+            display_name = 'CC'
+        elif name == 'ExpandingApprovals':
+            display_name = 'Expanding'
+        else:
+            display_name = name
+            
+        axes[ax_idx][0].set_ylabel(display_name)
         axes[ax_idx][0].set_xlabel('')
         
         # Plot the scatter:
@@ -162,11 +170,13 @@ def plot_winner_distribution(
         axes[ax_idx][2].set_ylim(example_ylim)
         
 
-    legend_elements = [Line2D([0], [0], marker = 'o', color=voter_color, lw=2, label='voters'),
-                    Line2D([0], [0], marker = 'o', color=candidate_color, lw=2, label='candidates'),
-                    Line2D([0], [0], marker = 'o', color=winner_color, lw=2, label='winners')]
+    legend_elements = [
+        Line2D([0], [0], marker = 'o', color=voter_color, linestyle='None', label='voters'),
+        Line2D([0], [0], marker = 'o', color=candidate_color, linestyle='None', label='candidates'),
+        Line2D([0], [0], marker = 'o', color=winner_color, linestyle='None', label='winners')
+    ]
 
-    fig.legend(handles=legend_elements, loc='lower center', bbox_to_anchor=(0.5, 0.075), ncol=3)
+    fig.legend(handles=legend_elements, loc='lower center', bbox_to_anchor=(0.5, 0.05), ncol=3)
     
     if output_file is not None:
         plt.savefig(output_file, bbox_inches='tight')
@@ -324,6 +334,112 @@ def plot_bloc_distribution(
                     Line2D([0], [0], marker = 'o', color=winner_color, lw=2, label='bloc')]
 
     fig.legend(handles=legend_elements, loc='lower center', bbox_to_anchor=(0.5, 0.075), ncol=3)
+    
+    if output_file is not None:
+        plt.savefig(output_file, bbox_inches='tight')
+        
+    plt.show()
+    
+    
+####################################################################################################
+
+
+def plot_representatives(
+    results : Dict[str, NDArray],
+    fig_params : Dict[str, Any],
+    colors : List[str],
+    output_file : str = None
+):
+    """
+    Plots the blocs and representatives from a computed set of results. 
+    
+    Args:
+        results (dict[str, np.ndarray]): Dictionary with strings as keys and their corresponding
+            np array datasets as values. In every result dictionary, the voters' data points should
+            be given for the key 'voters' as an array of shape (n, dim) where
+            n is the number of voters in each sample, and dim is the number of dimensions in the 
+            metric space. Likewise, 'candidates' should specify a (m, dim) array of candidate 
+            data points.
+            
+            Then, For each election type being used, the result dictionary should have a 
+            (key, value) pairs as (election name, election-data), where the election-data
+            given is a dictionary with information on specific voter blocs and their 
+            representatives.
+            
+        fig_params (dict[str, Any]): Dictionary with figure parameters.    
+            
+        colors (list[str]): Length 3 list of colors to use for voters, candidates, 
+            and winners respectively. Colors should be specified in hex format.
+            
+        output_file (str, optional): Filepath to save the plot to. If None, the plot will
+            be displayed but not saved.
+    """
+    voter_pos = results['voters']
+    candidate_pos = results['candidates']
+    elections = [_ for _ in results.keys() if _ not in ['voters', 'candidates', 'labels']]
+    
+    voter_color = colors[0]
+    candidate_color = colors[1]
+    winner_color = colors[2]
+    bloc_color = colors[3]
+    reps_color = colors[4]
+    
+    fig, axes = plt.subplots(4, len(elections), **fig_params)
+    for i, ax in enumerate(axes.flat):
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.set_xlabel('')
+        ax.set_ylabel('')
+    
+    # Set x and y limits for scatter and example plots:
+    epsilon = 0.01
+    ymin = np.min((np.min(voter_pos[:,1]), np.min(candidate_pos[:,1])))
+    ymax = np.max((np.max(voter_pos[:,1]), np.max(candidate_pos[:,1])))
+    xmin = np.min((np.min(voter_pos[:,0]), np.min(candidate_pos[:,0])))
+    xmax = np.max((np.max(voter_pos[:,0]), np.max(candidate_pos[:,0])))
+    xlim = [xmin - epsilon,xmax + epsilon]
+    ylim = [ymin - epsilon,ymax + epsilon]
+
+    # Plot the winner distributions for each election method:
+    for i,name in enumerate(elections):
+        e_dict = results[name]
+        winners = e_dict['winners']
+        axes[0][i].set_title(name)
+
+        methods = [method for method in e_dict.keys() if method != 'winners']
+        for j, method in enumerate(methods):
+            method_results = e_dict[method]
+            # Group
+            bloc = np.where(method_results['labels'] == 1)[0]
+            other_voters = np.where(method_results['labels'] == 0)[0]
+            reps = np.where(method_results['reps'] == 1)[0]
+            other_winners = np.array([w for w in winners if w not in reps])
+            axes[j][i].scatter(voter_pos[other_voters,0], voter_pos[other_voters,1],
+                            facecolors = voter_color, edgecolors = 'none', alpha = 0.9, s = 20)
+            axes[j][i].scatter(voter_pos[bloc,0], voter_pos[bloc,1],
+                        facecolors = bloc_color, edgecolors = 'none', alpha = 0.9, s = 20)
+            axes[j][i].scatter(candidate_pos[other_winners,0], candidate_pos[other_winners,1],
+                            facecolors = winner_color, edgecolors = 'none', alpha = 0.9, s = 30)
+            axes[j][i].scatter(candidate_pos[reps,0], candidate_pos[reps,1],
+                        facecolors = reps_color, edgecolors = 'none', alpha = 0.9, s = 30)
+            axes[j][i].set_xlim(xlim)
+            axes[j][i].set_ylim(ylim)
+
+            if i == 0:
+                axes[j][i].set_ylabel(method.title())
+                #axes[j][i].set_xlabel('')
+                
+            axes[j][i].text(xmax - 2, ymax - 1, str(np.round(method_results['ineff'], 2)))
+        
+
+    legend_elements = [
+        Line2D([0], [0], marker = 'o', color=voter_color, linestyle = 'None', label='voters'),
+        Line2D([0], [0], marker = 'o', color=winner_color, linestyle = 'None', label='winners'),
+        Line2D([0], [0], marker = 'o', color=bloc_color, linestyle = 'None', label='bloc'),
+        Line2D([0], [0], marker = 'o', color=reps_color, linestyle = 'None', label='representatives'),
+        ]
+
+    fig.legend(handles=legend_elements, loc='lower center', bbox_to_anchor=(0.5, 0.06), ncol=4)
     
     if output_file is not None:
         plt.savefig(output_file, bbox_inches='tight')

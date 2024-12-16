@@ -106,7 +106,27 @@ def voter_costs(cst_array: NDArray) -> NDArray:
     return voter_csts
 
 
-def proportional_assignment_cost(cst_array: NDArray, size: int) -> float:
+def min_assignment(cst_array: NDArray, size: int) -> NDArray:
+    """
+    Given voters and candidates in an input cost array, finds the lowest cost 
+    representative subset of candidates with a given size. 
+
+    Args:
+        cst_array (np.ndarray): (m x n) Array of costs with 
+            each entry i,j computed as the distance from candidate i to voter j. 
+        size (int): Size required for the selected subset of candidates.
+
+    Returns:
+        NDArray : Length size array of candidate indices
+    """
+    if size > len(cst_array):
+        raise ValueError("Requested size is too large!")
+
+    candidate_csts = candidate_costs(cst_array)
+    return np.argsort(candidate_csts)[:size]
+
+
+def min_assignment_cost(cst_array: NDArray, size: int) -> float:
     """
     Given voters and candidates in an input cost array, finds the lowest cost 
     assignment of voters to a subset of candidates with a given size. 
@@ -126,12 +146,68 @@ def proportional_assignment_cost(cst_array: NDArray, size: int) -> float:
     return np.sum(np.sort(candidate_csts)[:size])
 
 
+def proportional_assignment(
+    cst_array: NDArray,  
+    voter_labels: NDArray, 
+    bloc_label: int,
+    k : int
+) -> NDArray:  
+    """
+    Given voters and candidates in an input cost array, finds the lowest cost 
+    representative subset of candidates with proportionally chosen size. 
+    
+    Args:
+        cst_array (np.ndarray): (m x n) Array of costs with 
+            each entry i,j computed as the distance from candidate i to voter j. 
+        voter_labels (np.ndarray[int]): Integer array where index i gives
+                                        the bloc label of voter i.
+        bloc_label (int): Selected bloc label to compute score for.
+        k (int): Number of winners.
+    
+    Returns:
+        NDArray : Length size array of candidate indices
+    """
+    _, n = cst_array.shape
+    bloc_size = np.sum(voter_labels == bloc_label)
+    bloc_array = cst_array[:, voter_labels == bloc_label]
+    size = int(bloc_size / n * k)
+    return min_assignment(bloc_array, size)
+
+
+def proportional_assignment_cost(
+    cst_array: NDArray,  
+    voter_labels: NDArray, 
+    bloc_label: int,
+    k : int
+) -> float:  
+    """
+    Given voters and candidates in an input cost array, finds the lowest cost 
+    associated with the representative subset of candidates with proportionally chosen size. 
+    
+    Args:
+        cst_array (np.ndarray): (m x n) Array of costs with 
+            each entry i,j computed as the distance from candidate i to voter j. 
+        voter_labels (np.ndarray[int]): Integer array where index i gives
+                                        the bloc label of voter i.
+        bloc_label (int): Selected bloc label to compute score for.
+        k (int): Number of winners.
+    
+    Returns:
+        float: Sum of distances (cost).
+    """
+    _, n = cst_array.shape
+    bloc_size = np.sum(voter_labels == bloc_label)
+    bloc_array = cst_array[:, voter_labels == bloc_label]
+    size = int(bloc_size / n * k)
+    return min_assignment_cost(bloc_array, size)
+
+
+
 def group_inefficiency(
     cst_array: NDArray, 
     winner_indices: NDArray, 
     voter_labels: NDArray, 
-    bloc_label: int, 
-    size: Optional[int] = None
+    bloc_label: int
 ) -> float:
     """
     Computes the group inefficiency score as the cost ratio between
@@ -147,29 +223,28 @@ def group_inefficiency(
         voter_labels (np.ndarray[int]): Integer array where index i gives
                                         the bloc label of voter i.
         bloc_label (int): Selected bloc label to compute score for.
-        size (int, optional): Pre-defined constant size of the representative set
-            for input voters. Defaults to None, in which case size is computed
-            proportional to the size of the input set of voters *In most cases
-            we'll default to this!*.
-
+        
     Returns:
         float: Group inefficiency score.
     """
-    _, n = cst_array.shape
     k = len(winner_indices)
-
-    if size is None:
-        # Proportional sizing!
-        bloc_size = np.sum(voter_labels == bloc_label)
-        size = int(bloc_size / n * k)
-
-    if size != 0:
-        bloc_dists = cst_array[:, voter_labels == bloc_label]
-        cost1 = proportional_assignment_cost(bloc_dists[winner_indices, :], size)
-        cost2 = proportional_assignment_cost(bloc_dists, size)
-        return cost1 / cost2
-
-    return 0
+    cost1 = proportional_assignment_cost(
+        cst_array[winner_indices, :],
+        voter_labels,
+        bloc_label,
+        k
+    )
+    cost2 = proportional_assignment_cost(
+        cst_array,
+        voter_labels,
+        bloc_label,
+        k
+    )
+    
+    if cost1 == 0 and cost2 == 0:
+        return 0 
+    
+    return cost1 / cost2
 
 
 def random_group_inefficiency(
@@ -215,7 +290,7 @@ def random_group_inefficiency(
     random_bloc_labels = np.zeros(n)
     random_bloc_labels[random_bloc] = 1
     return (
-        group_inefficiency(cost_arr, winner_indices, random_bloc_labels, bloc_label=1, size=None), 
+        group_inefficiency(cost_arr, winner_indices, random_bloc_labels, bloc_label=1), 
         random_bloc
     )
     
@@ -299,3 +374,15 @@ def q_cost_array(
         q_cst_array[i, :] = q_costs(q, cst_array[list(subset), :])
     return q_cst_array
     
+    
+
+def heuristic_group(voter_positions, winner_positions):
+    n,_ = voter_positions.shape
+    k,_ = winner_positions.shape
+    winner_dists = euclidean_cost_array(voter_positions, winner_positions)
+    voter_dists = euclidean_cost_array(voter_positions, voter_positions)
+    furthest = np.argmax(np.min(winner_dists, axis=0))
+    smallest_size = math.ceil(n/k)
+    #cohesive_bloc = np.argsort(voter_dists[furthest, :]/np.min(winner_dists, axis=0))[: smallest_size]
+    cohesive_bloc = np.argsort(voter_dists[furthest, :])[: smallest_size]
+    return cohesive_bloc

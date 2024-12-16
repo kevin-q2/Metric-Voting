@@ -27,12 +27,16 @@ from .measurements import (
     cost, 
     voter_costs,
     candidate_costs, 
+    min_assignment,
+    min_assignment_cost,
+    proportional_assignment,
     proportional_assignment_cost,
     group_inefficiency,
     random_group_inefficiency,
     worst_random_group_inefficiency,
     q_costs, 
     q_cost_array,
+    heuristic_group,
 )
 
 from .utils import (
@@ -48,4 +52,5 @@ from .utils import (
 from .plotting import (
     plot_winner_distribution,
     plot_bloc_distribution,
+    plot_representatives,
 )
