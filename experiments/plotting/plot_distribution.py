@@ -7,7 +7,7 @@ from matplotlib.lines import Line2D
 import matplotlib.patches as patches
 import random
 import seaborn as sns
-from metric_voting import * 
+from metric_voting import *
 
 
 colors = ["#0099cd","#ffca5d","#00cd99","#99cd00","#cd0099","#9900cd","#8dd3c7",
@@ -18,9 +18,10 @@ colors = ["#0099cd","#ffca5d","#00cd99","#99cd00","#cd0099","#9900cd","#8dd3c7",
         "#D81B60","#26A69A","#FFEA00","#6200EA",
     ]
 
+colors = colors[:6] + colors[-12::2]
 
-input_file = '../data/2bloc_new.npz'
-output_file = '../figures/2bloc_new.png'
+input_file = 'data/2bloc_new.npz'
+output_file = 'figures/2bloc_new.png'
 
 loaded_data = np.load(input_file)
 result_dict = {key: loaded_data[key] for key in loaded_data.files}

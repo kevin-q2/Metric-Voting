@@ -176,7 +176,7 @@ def plot_winner_distribution(
         Line2D([0], [0], marker = 'o', color=winner_color, linestyle='None', label='winners')
     ]
 
-    fig.legend(handles=legend_elements, loc='lower center', bbox_to_anchor=(0.5, 0.05), ncol=3)
+    fig.legend(handles=legend_elements, loc='lower center', bbox_to_anchor=(0.5, 0.075), ncol=3)
     
     if output_file is not None:
         plt.savefig(output_file, bbox_inches='tight')

@@ -4,7 +4,7 @@ import math
 from metric_voting import *
 
 np.random.seed(918717)
-filename = '../data/2bloc_worst_example.npz'
+filename = 'data/2bloc_worst_example.npz'
 
 # Choose number of voters n and the number of candidates m
 n = 1000
