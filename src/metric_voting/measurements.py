@@ -376,13 +376,21 @@ def q_cost_array(
     
     
 
-def heuristic_group(voter_positions, winner_positions):
-    n,_ = voter_positions.shape
-    k,_ = winner_positions.shape
-    winner_dists = euclidean_cost_array(voter_positions, winner_positions)
-    voter_dists = euclidean_cost_array(voter_positions, voter_positions)
-    furthest = np.argmax(np.min(winner_dists, axis=0))
-    smallest_size = math.ceil(n/k)
-    #cohesive_bloc = np.argsort(voter_dists[furthest, :]/np.min(winner_dists, axis=0))[: smallest_size]
-    cohesive_bloc = np.argsort(voter_dists[furthest, :])[: smallest_size]
-    return cohesive_bloc
+def heuristic_worst_bloc(cst_array: NDArray, winner_indices: NDArray) -> NDArray:
+    m,n = cst_array.shape
+    k = len(winner_indices)
+    size_one = math.ceil(n/k)
+    
+    heuristic_bloc = None
+    heuristic_score = -1
+    for c in range(m):
+        c_closest = np.argsort(cst_array[c, :])[:size_one]
+        c_mask = np.zeros(n, dtype = int)
+        c_mask[c_closest] = 1
+        c_score = group_inefficiency(cst_array, winner_indices, c_mask, bloc_label=1)
+        
+        if c_score > heuristic_score:
+            heuristic_score = c_score
+            heuristic_bloc = c_mask
+    
+    return heuristic_bloc

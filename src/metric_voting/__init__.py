@@ -36,7 +36,7 @@ from .measurements import (
     worst_random_group_inefficiency,
     q_costs, 
     q_cost_array,
-    heuristic_group,
+    heuristic_worst_bloc,
 )
 
 from .utils import (

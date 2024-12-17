@@ -4,7 +4,7 @@ import math
 from metric_voting import *
 
 np.random.seed(918717)
-filename = 'data/2bloc_worst_example.npz'
+filename = 'data/2bloc_worst_example2.npz'
 
 # Choose number of voters n and the number of candidates m
 n = 1000
@@ -14,7 +14,7 @@ m = 1000
 k = 4
 
 # Means and standard deviations for each of the two voter distributions
-means = [[0, -2], [0, 2]]
+means = [[0, -4], [0, 4]]
 stds = [0.5, 0.5]
 two_party_G = [500,500]  # Group Sizes
 
@@ -99,6 +99,7 @@ for E, params in elections_dict.items():
     }
 
     # heuristic group ineff 
+    '''
     smallest_size = math.ceil(n/k)
     if name == 'Borda':
         heuristic = np.argsort(voter_positions[:,1])[::-1][:smallest_size]
@@ -121,10 +122,11 @@ for E, params in elections_dict.items():
     
     else:
         heuristic_mask = group_mask
+    '''
         
-    #heuristic_bloc = heuristic_group(voter_positions, candidate_positions[winners,:])
-    #heuristic_mask = np.zeros(n, dtype = int)
-    #heuristic_mask[heuristic_bloc] = 1
+    heuristic_bloc = heuristic_worst_bloc(cst_array, winners)
+    heuristic_mask = np.zeros(n, dtype = int)
+    heuristic_mask[heuristic_bloc] = 1
         
     heuristic_reps = proportional_assignment(cst_array[winners, :], heuristic_mask, bloc_label, k)
     heuristic_rep_mask = np.zeros(m, dtype=bool)

@@ -120,7 +120,7 @@ class CommitteeScoring(Election):
         
     def elect(self, profile : NDArray, k : int) -> NDArray: 
         """
-        Elect k candidates with the largest Borda scores.
+        Elect k candidates with the largest scores.
         
         Args:
             profile (NDArray): (m x n) Preference Profile.
