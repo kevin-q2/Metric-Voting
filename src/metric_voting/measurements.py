@@ -391,6 +391,6 @@ def heuristic_worst_bloc(cst_array: NDArray, winner_indices: NDArray) -> NDArray
         
         if c_score > heuristic_score:
             heuristic_score = c_score
-            heuristic_bloc = c_mask
+            heuristic_bloc = c_closest
     
     return heuristic_bloc

@@ -14,7 +14,7 @@ m = 1000
 k = 4
 
 # Means and standard deviations for each of the two voter distributions
-means = [[0, -4], [0, 4]]
+means = [[0, -2], [0, 2]]
 stds = [0.5, 0.5]
 two_party_G = [500,500]  # Group Sizes
 
