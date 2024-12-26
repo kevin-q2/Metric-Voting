@@ -1,5 +1,6 @@
 import numpy as np
 import math
+from itertools import combinations
 from numpy.typing import NDArray
 from typing import Callable, Tuple, Any, Optional, Union, List, Set
 from .utils import euclidean_distance, random_voter_bloc
@@ -377,20 +378,35 @@ def q_cost_array(
     
 
 def heuristic_worst_bloc(cst_array: NDArray, winner_indices: NDArray) -> NDArray:
+    """
+    Given a cost array and a set of winning candidates, finds a cohesive 
+    voter bloc with large inefficiency score.
+    
+    Args:
+        cst_array (np.ndarray): (m x n) Array of costs with 
+            each entry i,j computed as the distance from candidate i to voter j. 
+        winner_indices (np.ndarray[int]): Length k array of winning candidate indices.
+    
+    Returns:
+        heuristic_bloc (np.ndarray) : Indices of voters in the worst bloc found.
+    """
     m,n = cst_array.shape
     k = len(winner_indices)
-    size_one = math.ceil(n/k)
     
     heuristic_bloc = None
     heuristic_score = -1
-    for c in range(m):
-        c_closest = np.argsort(cst_array[c, :])[:size_one]
-        c_mask = np.zeros(n, dtype = int)
-        c_mask[c_closest] = 1
-        c_score = group_inefficiency(cst_array, winner_indices, c_mask, bloc_label=1)
-        
-        if c_score > heuristic_score:
-            heuristic_score = c_score
-            heuristic_bloc = c_closest
+    
+    for s in range(1, k + 1):
+        size = math.ceil(s * n/k)
+        for comb in combinations(range(m), s):
+            sum_of_distances = np.sum(cst_array[list(comb), :], axis = 0)
+            closest = np.argsort(sum_of_distances)[:size]
+            closest_mask = np.zeros(n, dtype = int)
+            closest_mask[closest] = 1
+            score = group_inefficiency(cst_array, winner_indices, closest_mask, bloc_label=1)
+            
+            if score > heuristic_score:
+                heuristic_score = score
+                heuristic_bloc = closest
     
     return heuristic_bloc
