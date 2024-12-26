@@ -1,4 +1,5 @@
 from metric_voting import SNTV
+from metric_voting import uniform_profile
 import numpy as np
 
 def test_basic_profile(basic_profile):
@@ -20,3 +21,11 @@ def test_tie_break(profile_with_fp_tie):
     assert  len(counts) == 2
     assert 450 < counts[0] and counts[0] < 550
     assert 450 < counts[1] and counts[1] < 550
+    
+def test_num_winners():
+    E = SNTV()
+    for _ in range(10):
+        profile = uniform_profile(200, 10)
+        rand_k = np.random.randint(1, 10 + 1)
+        assert len(E.elect(profile, rand_k)) == rand_k
+    

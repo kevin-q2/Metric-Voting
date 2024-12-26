@@ -90,11 +90,14 @@ class SNTV(Election):
         Returns:
             elected (np.ndarray): Winning candidates
         """
+        m,_ = profile.shape
         self._approve_profile(profile, k)        
         first_choice_votes = profile[0, :]
-        cands, counts = np.unique(first_choice_votes, return_counts=True)
+        counts = np.zeros(m)
+        for c in first_choice_votes:
+            counts[c] += 1
         ranking = tiebreak(counts)[::-1]
-        elected = cands[ranking[: min(k, len(cands))]]
+        elected = ranking[:k]
         return elected
 
 
