@@ -2,7 +2,7 @@ import numpy as np
 from numpy.typing import NDArray
 from typing import Callable, Dict, Tuple, Any, List, Optional, Union
 import pulp
-from .utils import tiebreak, remove_candidates, borda_matrix
+from .utils import tiebreak, remove_candidates, borda_matrix, geq_with_tol
 
 
 ####################################################################################################
@@ -263,7 +263,7 @@ class STV(Election):
         self.elected_mask = np.zeros(self.m)
         self.eliminated_mask = np.zeros(self.m)
         self.voter_indices = np.zeros(self.n, dtype=int)
-        self.voter_weights = np.ones(self.n)
+        self.voter_weights = np.ones(self.n, dtype=np.float64)
         self.elected_count = 0
         self.eliminated_count = 0
         
@@ -282,19 +282,21 @@ class STV(Election):
                 print("voter weights: " + str(self.voter_weights))
                 print("voter indices: " + str(self.voter_indices))
                 print("scores: " + str(candidate_scores))
+                print("sum of scores: " + str(np.sum(candidate_scores)))
+                print("sum of weights: " + str(np.sum(self.voter_weights)))
             
             if len(satisfies_quota) > 0:
                 self.add_candidates(satisfies_quota)
                 elected = satisfies_quota
                 for c in elected:
-                    self.transfer(candidate_voters[c])
+                    self.transfer(candidate_scores[c], candidate_voters[c])
                     
                 if self.verbose:
                     print("elected: " + str(elected))
                 
             else:
                 elim = self.eliminate(candidate_scores)
-                self.transfer(candidate_voters[elim])
+                self.transfer(candidate_scores[c], candidate_voters[elim])
                 
                 if self.verbose:
                     print("eliminated: " + str(elim))
@@ -325,18 +327,23 @@ class STV(Election):
             satisfies_quota (NDArray): Array of candidate indices that
                 satisfy the droop quota.
         """
-        candidate_scores = np.zeros(self.m)
+        candidate_scores = np.zeros(self.m, dtype = np.float64)
         candidate_voters = {c: [] for c in range(self.m)}
         for i in range(self.n):
             if self.voter_indices[i] != -1:
                 voter_choice = self.profile[self.voter_indices[i], i]
                 
                 if self.voter_weights[i] > 0:
-                    candidate_scores[voter_choice] += self.voter_weights[i]
+                    #candidate_scores[voter_choice] += self.voter_weights[i]
                     candidate_voters[voter_choice].append(i)
 
+        for c, voters in candidate_voters.items():
+            candidate_scores[c] = np.sum(self.voter_weights[voters])
+            
         satisfies_quota = np.where(
-        (candidate_scores >= self.droop) & (self.elected_mask != 1) & (self.eliminated_mask != 1)
+        (geq_with_tol(candidate_scores, self.droop, tol = 1e-10)) & 
+        (self.elected_mask != 1) & 
+        (self.eliminated_mask != 1)
         )[0]
         
         return candidate_scores, candidate_voters, satisfies_quota
@@ -385,7 +392,7 @@ class STV(Election):
         return eliminated
     
     
-    def transfer(self, candidate_voters : List[int]):
+    def transfer(self, total_votes: float, candidate_voters : List[int]):
         """
         Transfer votes from an elected candidate to the next available
         candidate on each voter's ballot. Unless there the ballot 
@@ -393,24 +400,29 @@ class STV(Election):
         from any further voting process. 
         
         Args:
+            votes (float): Number of votes to transfer.
             candidate_voters (List[int]): List of voter indices for 
                 voters who voted for the candidate to transfer from.
         """
-        total_votes = np.sum(self.voter_weights[candidate_voters])
         surplus_votes = total_votes - self.droop
         
-        if surplus_votes >= 0:
+        if self.verbose:
+            print("surplus: " + str(surplus_votes))
+        
+        if geq_with_tol(surplus_votes, 0, tol = 1e-10):
             if self.transfer_type == 'fractional':
-                self.voter_weights[candidate_voters] = (
-                    (surplus_votes / len(candidate_voters))
+                self.voter_weights[candidate_voters] = np.maximum(
+                    (surplus_votes / len(candidate_voters)),
+                    0.0
                 )
                 
             elif self.transfer_type == 'weighted-fractional':
                 weights_normalized = (
                     self.voter_weights[candidate_voters] / total_votes
                     )
-                self.voter_weights[candidate_voters] = (
-                    surplus_votes * weights_normalized
+                self.voter_weights[candidate_voters] = np.maximum(
+                    surplus_votes * weights_normalized,
+                    0.0
                 )
                 
             elif self.transfer_type == 'cambridge':

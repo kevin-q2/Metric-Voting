@@ -6,7 +6,7 @@ from metric_voting.elections import *
 
 # Choose number of voters n
 # And the number of candidates m
-n = 100
+n = 1000
 m = 20
 
 # And the number of winners for the election
@@ -52,7 +52,7 @@ n_samples = 10000
 np.random.seed(918717)
 
 # and sample from them
-f = 'data/2bloc_new.npz'
+f = 'data/2bloc_1k.npz'
 
 generator_input = [
     {'voter_group_sizes': two_party_G,

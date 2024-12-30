@@ -140,3 +140,18 @@ def random_voter_bloc(n : int, k : int, t : int, weights : NDArray) -> NDArray:
     else:
         random_bloc = np.arange(n)
     return random_bloc
+
+
+def geq_with_tol(a, b, tol = 1e-12):
+    """
+    Checks if a is greater than or equal to b with a given tolerance.
+    
+    Args:
+        a (float): First number.
+        b (float): Second number.
+        tol (float, optional): Tolerance. Defaults to 1e-12.
+    
+    Returns:
+        (bool): True if a >= b, False otherwise.
+    """
+    return a >= b-tol
