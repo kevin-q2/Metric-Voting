@@ -3,7 +3,7 @@ import math
 from itertools import combinations
 from numpy.typing import NDArray
 from typing import Callable, Tuple, Any, Optional, Union, List, Set
-from .utils import euclidean_distance, random_voter_bloc
+from .utils import euclidean_distance, tiebreak, random_voter_bloc
 
 
 def cost_array(
@@ -107,10 +107,54 @@ def voter_costs(cst_array: NDArray) -> NDArray:
     return voter_csts
 
 
+def q_costs(
+    q : int,
+    cst_array : NDArray
+):
+    """
+    Given a set of voter and candidate positions along with a distance function,
+    returns a length n array with each entry i storing the
+    distance from voter i to its qth closest candidate.
+
+    Args:
+        q (int): qth closest candidate to compute distance for. 
+        cst_array (np.ndarray): (m x n) Array of costs with 
+            each entry i,j computed as the distance from candidate i to voter j. 
+
+    Returns:
+        (np.ndarray): Size n array of distances from voters to candidates.
+    """
+    return np.sort(cst_array, axis = 0)[q - 1, :]
+
+
+def q_cost_array(
+    q : int,
+    cst_array : NDArray,
+    candidate_subsets : List[Set[int]]
+) -> NDArray:
+    """
+    Given a list of candidate subsets, computes the q cost array for each subset.
+
+    Args:
+        q (int): qth closest candidate to compute distance for. 
+        cst_array (np.ndarray): (m x n) Array of costs with 
+            each entry i,j computed as the distance from candidate i to voter j. 
+        candidate_subsets (List[Set[int]]): List of candidate subsets to compute q costs for.
+
+    Returns:
+        (np.ndarray): Size subsets x n array of q-costs from voters to subsets of candidates.
+    """
+    q_cst_array = np.zeros((len(candidate_subsets), cst_array.shape[1]))
+    for i, subset in enumerate(candidate_subsets):
+        q_cst_array[i, :] = q_costs(q, cst_array[list(subset), :])
+    return q_cst_array
+
+
 def min_assignment(cst_array: NDArray, size: int) -> NDArray:
     """
-    Given voters and candidates in an input cost array, finds the lowest cost 
-    representative subset of candidates with a given size. 
+    Given voters and candidates in an input cost array, finds a
+    representative subset of candidates of a given size, with minimum sum of 
+    costs to voters. 
 
     Args:
         cst_array (np.ndarray): (m x n) Array of costs with 
@@ -124,7 +168,7 @@ def min_assignment(cst_array: NDArray, size: int) -> NDArray:
         raise ValueError("Requested size is too large!")
 
     candidate_csts = candidate_costs(cst_array)
-    return np.argsort(candidate_csts)[:size]
+    return tiebreak(candidate_csts)[:size]
 
 
 def min_assignment_cost(cst_array: NDArray, size: int) -> float:
@@ -144,7 +188,8 @@ def min_assignment_cost(cst_array: NDArray, size: int) -> float:
         raise ValueError("Requested size is too large!")
 
     candidate_csts = candidate_costs(cst_array)
-    return np.sum(np.sort(candidate_csts)[:size])
+    min_cands = tiebreak(candidate_csts)[:size]
+    return np.sum(candidate_csts[min_cands])
 
 
 def proportional_assignment(
@@ -243,7 +288,7 @@ def group_inefficiency(
     )
     
     if cost1 == 0 and cost2 == 0:
-        return 0 
+        return 1
     
     return cost1 / cost2
 
@@ -285,6 +330,7 @@ def random_group_inefficiency(
 
         # Greedy estimate / inefficiency heuristic for voters
         greedy_scores = (winner_set_cost_arr / candidate_set_cost_arr)
+        greedy_scores = np.nan_to_num(greedy_scores, nan=0.0)
         weights = greedy_scores / np.sum(greedy_scores)
     
     random_bloc = random_voter_bloc(n, k, t = t, weights = weights)
@@ -329,52 +375,7 @@ def worst_random_group_inefficiency(
             worst_score = score
             worst_bloc = bloc
     
-    return worst_score, worst_bloc
-
-
-
-def q_costs(
-    q : int,
-    cst_array : NDArray
-):
-    """
-    Given a set of voter and candidate positions along with a distance function,
-    returns a length n array with each entry i storing the
-    distance from voter i to its qth closest candidate.
-
-    Args:
-        q (int): qth closest candidate to compute distance for. 
-        cst_array (np.ndarray): (m x n) Array of costs with 
-            each entry i,j computed as the distance from candidate i to voter j. 
-
-    Returns:
-        (np.ndarray): Size n array of distances from voters to candidates.
-    """
-    return np.sort(cst_array, axis = 0)[q, :]
-
-
-def q_cost_array(
-    q : int,
-    cst_array : NDArray,
-    candidate_subsets : List[Set[int]]
-):
-    """
-    Given a list of candidate subsets, computes the q cost array for each subset.
-
-    Args:
-        q (int): qth closest candidate to compute distance for. 
-        cst_array (np.ndarray): (m x n) Array of costs with 
-            each entry i,j computed as the distance from candidate i to voter j. 
-        candidate_subsets (List[Set[int]]): List of candidate subsets to compute q costs for.
-
-    Returns:
-        (np.ndarray): Size n array of distances from voters to candidates.
-    """
-    q_cst_array = np.zeros((len(candidate_subsets), cst_array.shape[1]))
-    for i, subset in enumerate(candidate_subsets):
-        q_cst_array[i, :] = q_costs(q, cst_array[list(subset), :])
-    return q_cst_array
-    
+    return worst_score, worst_bloc    
     
 
 def heuristic_worst_bloc(cst_array: NDArray, winner_indices: NDArray) -> NDArray:
@@ -394,19 +395,35 @@ def heuristic_worst_bloc(cst_array: NDArray, winner_indices: NDArray) -> NDArray
     k = len(winner_indices)
     
     heuristic_bloc = None
+    heuristic_size = None
     heuristic_score = -1
     
     for s in range(1, k + 1):
         size = math.ceil(s * n/k)
         for comb in combinations(range(m), s):
             sum_of_distances = np.sum(cst_array[list(comb), :], axis = 0)
-            closest = np.argsort(sum_of_distances)[:size]
+            closest = tiebreak(sum_of_distances)[:size]
             closest_mask = np.zeros(n, dtype = int)
             closest_mask[closest] = 1
             score = group_inefficiency(cst_array, winner_indices, closest_mask, bloc_label=1)
-            
-            if score > heuristic_score:
+                
+            if np.isclose(score,heuristic_score, atol = 1e-8):
+                if size > heuristic_size:
+                    heuristic_score = score
+                    heuristic_size = size
+                    heuristic_bloc = closest
+                else:
+                    if len(heuristic_bloc.shape) == 1:
+                        heuristic_bloc = np.array([heuristic_bloc]) 
+                    heuristic_bloc = np.vstack((heuristic_bloc, closest))
+                        
+            elif score > heuristic_score:
                 heuristic_score = score
+                heuristic_size = size
                 heuristic_bloc = closest
-    
+
+    if len(heuristic_bloc.shape) > 1:
+        random_idx = np.random.randint(0, heuristic_bloc.shape[0])
+        heuristic_bloc = heuristic_bloc[random_idx]
+        
     return heuristic_bloc
