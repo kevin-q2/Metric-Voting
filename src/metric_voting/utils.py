@@ -16,21 +16,6 @@ def euclidean_distance(x, y):
     return np.linalg.norm(x - y, ord=2)
 
 
-def cost_array_to_ranking(cst_array: NDArray) -> NDArray:
-    """
-    Given a cost array, returns a ranking of candidates for each voter.
-    Specifically, for an (m x n) cost array, the output is an (m x n) ranking matrix
-    where entry [i,j] stores the rank of candidate i for voter j.
-
-    Args:
-        cst_array (np.ndarray): (m x n) Cost array.
-
-    Returns:
-        (np.ndarray): Computed (m x n) ranking matrix.
-    """
-    return np.argsort(cst_array, axis=0)
-
-
 def tiebreak(scores : NDArray, proxy : NDArray = None) -> NDArray:
     """
     Breaks ties in a length m array of scores by:
@@ -51,6 +36,24 @@ def tiebreak(scores : NDArray, proxy : NDArray = None) -> NDArray:
         return np.lexsort((random_tiebreakers, proxy, scores))
     else:
         return np.lexsort((random_tiebreakers, scores))
+
+
+def cost_array_to_ranking(cst_array: NDArray) -> NDArray:
+    """
+    Given a cost array, returns a ranking of candidates for each voter.
+    Specifically, for an (m x n) cost array, the output is an (m x n) ranking matrix
+    where entry [i,j] stores the rank of candidate i for voter j.
+
+    Args:
+        cst_array (np.ndarray): (m x n) Cost array.
+
+    Returns:
+        (np.ndarray): Computed (m x n) ranking matrix.
+    """
+    ranking = np.zeros(cst_array.shape, dtype=int)
+    for j in range(cst_array.shape[1]):
+        ranking[:, j] = tiebreak(cst_array[:, j])
+    return ranking
 
 
 def borda_matrix(
@@ -135,7 +138,7 @@ def random_voter_bloc(n : int, k : int, t : int, weights : NDArray) -> NDArray:
     if t != k:
         min_size = math.ceil(n * t / k)
         max_size = min(math.ceil(n * (t + 1) / k) - 1, n)
-        bloc_size = np.random.randint(min_size, max_size)
+        bloc_size = np.random.randint(min_size, max_size + 1)
         random_bloc = np.random.choice(n, bloc_size, replace=False, p = weights)
     else:
         random_bloc = np.arange(n)
