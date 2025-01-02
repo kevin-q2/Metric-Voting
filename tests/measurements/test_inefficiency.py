@@ -149,11 +149,16 @@ def test_random_group_ineff():
     ])
     winner_indices = [3,4]
     
-    ineffs = np.zeros(6)
+    ineffs = []
     for i, comb in enumerate(combinations(range(4), 2)):
         labels = np.zeros(4)
         labels[list(comb)] = 1
-        ineffs[i] = group_inefficiency(cst_array, winner_indices, labels, bloc_label = 1)
+        ineffs.append(group_inefficiency(cst_array, winner_indices, labels, bloc_label = 1))
+        
+    for i, comb in enumerate(combinations(range(4), 3)):
+        labels = np.zeros(4)
+        labels[list(comb)] = 1
+        ineffs.append(group_inefficiency(cst_array, winner_indices, labels, bloc_label = 1))
         
     samples = 10000
     random_ineffs = np.zeros(samples)
@@ -168,9 +173,9 @@ def test_random_group_ineff():
         
     unique1,counts1 = np.unique(ineffs, return_counts=True)
     unique2,counts2 = np.unique(random_ineffs, return_counts=True)
-    assert set(unique1) == set(unique2)
+    assert np.allclose(unique1, unique2, atol = 0.05)
     for i,c in enumerate(counts1):
-        assert np.isclose(c/6, counts2[i]/samples, atol = 0.05)
+        assert np.isclose(c/len(ineffs), counts2[i]/samples, atol = 0.05)
         
     
         

@@ -120,7 +120,9 @@ class Spatial:
                 position of candidate i in metric space. 
             voter_positions (NDArray): A n x d matrix where each row i contains the
                 position of voter i in metric space.
-            voter_labels (NDArray): A n x 1 array where each element i contains the
+            candidate_labels (NDArray): A length m array where each element i contains the
+                group label for voter i.
+            voter_labels (NDArray): A length n array where each element i contains the
                 group label for voter i.
         """
         # Sample Candidate Positions
@@ -133,13 +135,14 @@ class Spatial:
             [self.voter_dist_fn(**self.voter_dist_fn_params) for _ in range(n)]
         )
 
+        candidate_labels = np.zeros(m)
         voter_labels = np.zeros(n)
         
         # Compute Preference Profile
         cst_array = cost_array(voter_positions, candidate_positions, self.distance_fn)
         profile = cost_array_to_ranking(cst_array)
 
-        return profile, candidate_positions, voter_positions, voter_labels
+        return profile, candidate_positions, voter_positions, candidate_labels, voter_labels
 
 
 class GroupSpatial:
@@ -220,7 +223,7 @@ class GroupSpatial:
             
             if len(voter_dist_fns) != n_voter_groups:
                 raise ValueError(
-                    "Group size does not match with given voter distributions"
+                    "Group size does not match with given voter distributions."
                 )
 
             self.voter_dist_fns = voter_dist_fns
@@ -235,7 +238,7 @@ class GroupSpatial:
             
             if len(candidate_dist_fns) != n_candidate_groups:
                 raise ValueError(
-                    "Group size does not match with given candidate distributions"
+                    "Group size does not match with given candidate distributions."
                 )
 
             self.candidate_dist_fns = candidate_dist_fns
@@ -271,7 +274,7 @@ class GroupSpatial:
                     self.candidate_dist_fn_params[i] = {"low": 0.0, "high": 1.0, "size": 2}
                 else:
                     raise ValueError(
-                        "No parameters were given for the input voter distribution."
+                        "No parameters were given for the input candidate distribution."
                     )
                 # Peter Note: Check to make sure that the kwargs are valid params for the
                 # callables used in the distribution function
@@ -331,7 +334,9 @@ class GroupSpatial:
                 position of candidate i in metric space. 
             voter_positions (NDArray): A n x d matrix where each row i contains the
                 position of voter i in metric space.
-            voter_labels (NDArray): A n x 1 array where each element i contains the
+            candidate_labels (NDArray): A length m array where each element i contains the
+                group label for voter i.
+            voter_labels (NDArray): A length n array where each element i contains the
                 group label for voter i.
         """
 
@@ -354,6 +359,9 @@ class GroupSpatial:
         ]
         candidate_positions = np.vstack(candidate_positions)
         
+        candidate_labels = [[i] * candidate_group_sizes[i] for i in range(self.n_candidate_groups)]
+        candidate_labels = np.array([item for sublist in candidate_labels for item in sublist])
+        
         # Sample Voter Positions
         voter_positions = [
             [
@@ -373,7 +381,7 @@ class GroupSpatial:
         profile = cost_array_to_ranking(cst_array)
 
 
-        return profile, candidate_positions, voter_positions, voter_labels
+        return profile, candidate_positions, voter_positions, candidate_labels, voter_labels
 
 
 
@@ -479,19 +487,20 @@ class ProbabilisticGroupSpatial(GroupSpatial):
                 position of candidate i in metric space. 
             voter_positions (NDArray): A n x d matrix where each row i contains the
                 position of voter i in metric space.
-            voter_labels (NDArray): A n x 1 array where each element i contains the
+            candidate_labels (NDArray): A length m array where each element i contains the
                 group label for voter i.
-            candidate_labels (NDArray): A m x 1 array where each element i contains the
-                group label for candidate i.
+            voter_labels (NDArray): A length n array where each element i contains the
+                group label for voter i.
         """
         
         if len(voter_group_probs) != self.n_voter_groups:
-            raise ValueError("Number of voter groups is inconsistent with n_voter_groups.")
+            raise ValueError("Number of voter probabilities is inconsistent with n_voter_groups.")
         if len(candidate_group_probs) != self.n_candidate_groups:
-            raise ValueError("Number of candidate groups is inconsistent with n_candidate_groups.")
+            raise ValueError("Number of candidate probabilities "
+                             "is inconsistent with n_candidate_groups.")
         
         if sum(voter_group_probs) != 1:
-            raise ValueError("Candidate group probabilities do not sum to 1.")
+            raise ValueError("Voter group probabilities do not sum to 1.")
         if sum(candidate_group_probs) != 1:
             raise ValueError("Candidate group probabilities do not sum to 1.")
         
@@ -505,7 +514,10 @@ class ProbabilisticGroupSpatial(GroupSpatial):
         candidate_group_sizes = [np.sum(candidate_labels == i)
                                  for i in range(self.n_candidate_groups)]
         
-        profile, candidate_positions, voter_positions, _ = super().generate(voter_group_sizes,
-                                                                            candidate_group_sizes)
-        return profile, candidate_positions, voter_positions, voter_labels, candidate_labels
+        (profile, candidate_positions, voter_positions,
+         candidate_labels, voter_labels) = super().generate(
+             voter_group_sizes,
+            candidate_group_sizes
+        )
+        return profile, candidate_positions, voter_positions, candidate_labels, voter_labels
         

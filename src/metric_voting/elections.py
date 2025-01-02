@@ -43,9 +43,11 @@ class Election:
         Returns:
             (bool): True if the profile is approved, False otherwise.
         """
-        _,n = profile.shape
+        m,n = profile.shape
         if n < k:
             raise ValueError("Requested more elected seats than there are voters!")
+        if m < k:
+            raise ValueError("Requested more elected seats than there are candidates!")
         
         if not np.all(np.apply_along_axis(self._is_complete_ranking, axis = 0, arr = profile)):
             raise ValueError("Profile not in correct form.")
@@ -296,7 +298,7 @@ class STV(Election):
                 
             else:
                 elim = self.eliminate(candidate_scores)
-                self.transfer(candidate_scores[c], candidate_voters[elim])
+                self.transfer(candidate_scores[elim], candidate_voters[elim])
                 
                 if self.verbose:
                     print("eliminated: " + str(elim))

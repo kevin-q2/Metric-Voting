@@ -32,19 +32,24 @@ def election_sample(
         k (int): Number of candidates to elect.
 
     Returns:
-        voter_positions (np.ndarray): Numpy matrix where each row encodes a voters position
-            in the metric space.
-        candidate_positions (np.ndarray): Numpy matrix where each row encodes a candidate's
-            position in the metric space.
         winners (dict[str, np.ndarray]): Dictionary with election names as keys and their 
             corresponding winners as values. Winners are shown by a length m boolean array 
             with True values representing winning candidates. 
             Querying candidate_positions[winners['STV'],:] for example gives
             the winning candidates mask.
+        candidate_positions (np.ndarray): Numpy matrix where each row encodes a candidate's
+            position in the metric space.
+        voter_positions (np.ndarray): Numpy matrix where each row encodes a voters position
+            in the metric space.
+        candidate_labels (NDArray): Length m array of group labels for voters.
         voter_labels (NDArray): Length n array of group labels for voters.
     """
 
-    profile, candidate_positions, voter_positions, voter_labels = generator.generate(
+    (profile,
+     candidate_positions,
+     voter_positions,
+     candidate_labels,
+     voter_labels) = generator.generate(
         **generator_input
     )
     winners = {}
@@ -65,7 +70,7 @@ def election_sample(
             
         winners[E.__name__] = elects
 
-    return voter_positions, candidate_positions, winners, voter_labels
+    return winners, candidate_positions, voter_positions, candidate_labels, voter_labels
 
 
 
@@ -118,24 +123,12 @@ def samples(
         result_dict["labels"] = [np.zeros((s, n), dtype = int)] * s
 
         for i in range(s):
-            V, C, W, vlabels = election_sample(generator, elections_dict, gen_input, k)
+            W, C, V, clabels, vlabels = election_sample(generator, elections_dict, gen_input, k)
             result_dict["voters"][i] = V
             result_dict["candidates"][i] = C
-            result_dict["labels"][i] = vlabels
+            result_dict["voter_labels"][i] = vlabels
+            result_dict["candidate_labels"][i] = clabels
             for name, idxs in W.items():
-                
-                '''
-                if len(idxs) == k:
-                    Cx = C[idxs, :]
-                elif len(idxs) <= k:
-                    diff = k - len(idxs)
-                    empties = np.array([[np.nan] * dim] * diff)
-                    Cx = np.append(C[idxs, :], empties, axis=0)
-                else:
-                    raise ValueError("More than k candidates elected")
-                    
-                result_dict[name][i] = Cx
-                '''
                 mask = np.zeros(m, dtype=bool)
                 mask[idxs] = True
                 result_dict[name][i] = mask

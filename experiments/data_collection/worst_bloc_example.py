@@ -45,6 +45,7 @@ two_party_generator = GroupSpatial(n_voter_groups = 2, n_candidate_groups = 1,
 profile, \
 candidate_positions, \
 voter_positions, \
+candidate_labels, \
 voter_labels = two_party_generator.generate(voter_group_sizes = two_party_G, 
                                             candidate_group_sizes = [m])
 

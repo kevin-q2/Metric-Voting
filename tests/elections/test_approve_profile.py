@@ -1,5 +1,6 @@
 from metric_voting import Election
 import numpy as np
+import pytest
 
 def test_basic_ranking():
     rank = np.arange(10)
@@ -18,12 +19,14 @@ def test_ranking_with_repeats():
     
 def test_basic_profile(basic_profile):
     E = Election()
-    assert E._approve_profile(basic_profile, k=1)
+    E._approve_profile(basic_profile, k=1)
     
 def test_incomplete_profile(incomplete_profile):
     E = Election()
-    assert not E._approve_profile(incomplete_profile, k=1)
+    with pytest.raises(ValueError, match="Profile not in correct form."):
+        E._approve_profile(incomplete_profile, k=1)
     
 def test_profile_with_repeats(profile_with_repeats):
     E = Election()
-    assert not E._approve_profile(profile_with_repeats, k=1)
+    with pytest.raises(ValueError, match="Profile not in correct form."):
+        E._approve_profile(profile_with_repeats, k=1)
