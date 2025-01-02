@@ -3,6 +3,7 @@ from multiprocessing import Pool
 from typing import Dict, Callable, Any, List, Tuple
 from numpy.typing import NDArray
 
+from .elections import *
 from .measurements import euclidean_cost_array, q_cost_array
 from .utils import cost_array_to_ranking
 
@@ -55,7 +56,7 @@ def election_sample(
     winners = {}
 
     for E, params in elections_dict.items():
-        if E.__name__ == "PluralityVeto":
+        if E.__name__ == "CommitteeVeto" and 'q' in params:
             # Form the multi-winner plurality veto profile.
             # Assuming Euclidean Distance here!!
             cst_array = euclidean_cost_array(voter_positions, candidate_positions)
@@ -67,7 +68,7 @@ def election_sample(
             
         else:
             elects = E(**params).elect(profile=profile, k=k)
-            
+        
         winners[E.__name__] = elects
 
     return winners, candidate_positions, voter_positions, candidate_labels, voter_labels
@@ -120,7 +121,8 @@ def samples(
         result_dict = {E.__name__: np.zeros((s, m), dtype = bool) for E in elections_dict.keys()}
         result_dict["voters"] = [np.zeros((s, n, dim))] * s
         result_dict["candidates"] = [np.zeros((s, m, dim))] * s
-        result_dict["labels"] = [np.zeros((s, n), dtype = int)] * s
+        result_dict["voter_labels"] = [np.zeros((s, n), dtype = int)] * s
+        result_dict["candidate_labels"] = [np.zeros((s, m), dtype = int)] * s
 
         for i in range(s):
             W, C, V, clabels, vlabels = election_sample(generator, elections_dict, gen_input, k)
@@ -129,9 +131,9 @@ def samples(
             result_dict["voter_labels"][i] = vlabels
             result_dict["candidate_labels"][i] = clabels
             for name, idxs in W.items():
-                mask = np.zeros(m, dtype=bool)
-                mask[idxs] = True
-                result_dict[name][i] = mask
+                winner_mask = np.zeros(m, dtype=bool)
+                winner_mask[idxs] = True
+                result_dict[name][i] = winner_mask
                 
 
         if not filename is None:

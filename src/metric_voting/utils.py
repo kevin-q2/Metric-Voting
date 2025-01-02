@@ -57,7 +57,7 @@ def cost_array_to_ranking(cst_array: NDArray) -> NDArray:
 
 
 def borda_matrix(
-    profile: NDArray, scoring_scheme: Callable[[int, int], float] = lambda x, y: x - y
+    profile: NDArray, k : int, scoring_scheme: Callable[[int, int], float] = lambda x, y, z: x - z
 ) -> NDArray:
     """
     Computes a borda matrix given an input preference profile.
@@ -67,10 +67,14 @@ def borda_matrix(
     Args:
         profile (np.ndarray): (candidates x voters) Preference profile matrix.
         
+        k (int): Number of candidates to consider for borda scoring.
+        
         scoring_scheme (callable, optional): Scoring scheme to use for borda scoring.
+            Function of the form f(m, k, i) where m is the total number of candidates,
+            k is the voter's ranking of the candidate, and
+            i is a voter's ranking in [1,...,m] of the candidate.
             Defaults to the standard borda scoring scheme which is equivalent to 
-            a function f(m, i) = m - i where m is the total number of candidates 
-            and i is a voter's ranking in [1,...,m] of the candidate. 
+            a function f(m, k, i) = m - i. 
 
     Returns:
         (np.ndarray): Computed (m x n) borda matrix.
@@ -79,7 +83,7 @@ def borda_matrix(
     B = np.zeros((m, n))
     for i in range(profile.shape[0]):
         for j in range(profile.shape[1]):
-            B[profile[i, j], j] = scoring_scheme(m, i + 1)
+            B[profile[i, j], j] = scoring_scheme(m, k, i + 1)
 
     return B
 

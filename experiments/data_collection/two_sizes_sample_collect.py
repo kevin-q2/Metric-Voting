@@ -6,16 +6,16 @@ from metric_voting.elections import *
 
 # Choose number of voters n
 # And the number of candidates m
-n = 100
+n = 1000
 m = 20
 
 # And the number of winners for the election
 k = 4 
 
 # Means for each of the 2 Gaussian distributions
-means = [[0, -4], [0, 4]]
-stds = [0.5, 0.5]  # Standard deviations for each Gaussian
-two_party_G = [50,50]  # Group Sizes
+means = [[0, -1], [0, 1]]
+stds = [1/6, 1/6]  # Standard deviations for each Gaussian
+two_party_G = [500,500]  # Group Sizes
 
 voter_params = [{'loc': None, 'scale': None, 'size': 2} for _ in range(len(two_party_G))]
 for i,mean in enumerate(means):
@@ -24,7 +24,7 @@ for i,mean in enumerate(means):
 for i,std in enumerate(stds):
     voter_params[i]['scale'] = std
     
-candidate_params = [{'low': -8, 'high': 8, 'size': 2}]
+candidate_params = [{'low': -2, 'high': 2, 'size': 2}]
 
 distance = lambda point1, point2: np.linalg.norm(point1 - point2)
 
@@ -39,10 +39,12 @@ two_party_generator = GroupSpatial(
 )
 
 # Define elections
-elections_dict = {SNTV:{}, Bloc:{}, Borda:{}, STV:{'transfer_type' : 'weighted-fractional'},
+elections_dict = {SNTV:{}, Bloc:{}, Borda:{}, Harmonic:{'solver' : 'GUROBI_CMD'},
+                  STV:{'transfer_type' : 'weighted-fractional'},
                  ChamberlinCourant:{'solver' : 'GUROBI_CMD'}, GreedyCC:{},
-                  Monroe:{'solver' : 'GUROBI_CMD'}, 
-                  PluralityVeto:{'q' : 2}, ExpandingApprovals: {},
+                  Monroe:{'solver' : 'GUROBI_CMD'}, GreedyMonroe:{}, 
+                  PluralityVeto:{}, CommitteeVeto:{'q':k}, 
+                  ExpandingApprovals: {},
                  SMRD:{}, OMRD:{}, DMRD:{'rho': 0.5}}
 
 # Number of samples to use
@@ -52,7 +54,7 @@ n_samples = 10000
 np.random.seed(918717)
 
 # and sample from them
-f = 'data/2sizes_new.npz'
+f = 'data/2sizes.npz'
 
 generator_input = [
     {'voter_group_sizes': [100 - i, i], 'candidate_group_sizes': [m]} for i in range(0, 105, 5)

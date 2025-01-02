@@ -103,8 +103,18 @@ def test_borda_matrix():
         [2, 0, 2, 0]
     ])
     
-    assert np.array_equal(borda_matrix(profile), borda)
+    assert np.array_equal(borda_matrix(profile, 2), borda)
     
+    approval = lambda x, y, z: 1 if z <= y else 0
+    
+    approval_scores = np.array([
+        [0, 1, 0, 1],
+        [1, 0, 1, 1],
+        [0, 1, 0, 0],
+        [1, 0, 1, 0]
+    ])
+    
+    assert np.array_equal(borda_matrix(profile, 2, approval), approval_scores)
     
     
 def test_remove_candidates():

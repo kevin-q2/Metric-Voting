@@ -505,7 +505,7 @@ class ChamberlinCourant(Election):
         """
         self._approve_profile(profile, k)       
         m, n = profile.shape
-        B = borda_matrix(profile).T  # n x m matrix after transpose
+        B = borda_matrix(profile, k).T  # n x m matrix after transpose
 
         problem = pulp.LpProblem("Chamberlin-Courant", pulp.LpMaximize)
 
@@ -579,7 +579,7 @@ class Monroe(Election):
         """
         self._approve_profile(profile, k)
         m, n = profile.shape
-        B = borda_matrix(profile).T  # n x m matrix after transpose
+        B = borda_matrix(profile, k).T  # n x m matrix after transpose
 
         problem = pulp.LpProblem("Monroe", pulp.LpMaximize)
 
@@ -607,6 +607,98 @@ class Monroe(Election):
         for j in range(m):
             problem += pulp.lpSum(x[i, j] for i in range(n)) >= np.floor(n / k) * y[j]
             problem += pulp.lpSum(x[i, j] for i in range(n)) <= np.ceil(n / k) * y[j]
+
+        # Elect exactly k candidates
+        problem += pulp.lpSum(y[j] for j in range(m)) == k
+
+        problem.solve(self.solver)
+        elected = np.array([j for j in range(m) if pulp.value(y[j]) == 1])
+        self.objective = pulp.value(problem.objective)
+        return elected
+    
+    
+####################################################################################################
+
+
+class Harmonic(Election):
+    """
+    Elect k candidates with the harmonic comittee scoring mechanism..
+    This function uses an integer linear program to find a winner set which
+    maximizes the sum of harmonic adjusted committee scores.
+    With an approval scoring scheme, this is equivalent to the PAV rule.
+    With a borda scoring scheme, this is equivalent to the Harmonic Borda rule.
+    
+    For more information, please see:
+    "What Do Multiwinner Voting Rules Do? An Experiment Over the Two-Dimensional Euclidean Domain"
+    Elkind et al (2019)
+    (https://arxiv.org/abs/1901.09217)
+    
+    NOTE: As far as I can tell, these solvers output deterministic answers,
+    even in cases where there are multiple optimal solutions...Not sure how to handle this.
+    
+    Args:
+        solver (str, optional): Solver for the integer linear program. These are taken 
+            from PuLP's available solvers, for more information please see 
+            (https://coin-or.github.io/pulp/guides/how_to_configure_solvers.html).
+            
+            Some options 'PULP_CBC_CMD' and 'GUROBI_CMD' (requires licesnse).
+            Defaults to 'PULP_CBC_CMD', which uses PuLPs default coin and branch bound solver.
+    
+    Attributes:
+        objective (float): Objective value of the last solved problem.
+    """
+    def __init__(
+        self,
+        scoring_scheme : Callable = lambda x, y, z: 1 if z <= y else 0,
+        solver : str = 'PULP_CBC_CMD'):
+        self.scoring_scheme = scoring_scheme
+        self.solver = pulp.getSolver(solver, msg = False)
+    
+    
+    def elect(self, profile : NDArray, k : int) -> NDArray: 
+        """
+
+        Args:
+            profile (np.ndarray): (candidates x voters) Preference Profile.
+            k (int): Number of candidates to elect
+
+        Returns:
+            elected (np.ndarray): Winning candidates
+        """
+        self._approve_profile(profile, k)
+        m, n = profile.shape
+        B = borda_matrix(profile, k, self.scoring_scheme).T  # n x m matrix after transpose
+
+        problem = pulp.LpProblem("Harmonic", pulp.LpMaximize)
+
+        # Voter assignment variable
+        x = pulp.LpVariable.dicts(
+            "x", ((i, j, l) for i in range(n) for j in range(m) for l in range(k)), cat="Binary"
+        )
+        # Candidate 'elected' variable
+        y = pulp.LpVariable.dicts("y", range(m), cat="Binary")
+
+        # Objective function:
+        problem += pulp.lpSum(
+            (1/(l+1)) * B[i, j] * x[i, j, l] for i in range(n) for j in range(m) for l in range(k)
+        )
+
+        # Each candidate may only occupy at most one ranked position
+        for i in range(n):
+            for j in range(m):
+                problem += pulp.lpSum(x[i, j, l] for l in range(k)) <= 1
+                
+        # Each position l occupied exactly one candidate
+        for i in range(n):
+            for l in range(k):
+                problem += pulp.lpSum(x[i, j, l] for j in range(m)) == 1
+
+        # A voter can only be assigned to a candidate if that candidate is elected
+        for i in range(n):
+            for j in range(m):
+                for l in range(k):
+                    problem += x[i, j, l] <= y[j]
+
 
         # Elect exactly k candidates
         problem += pulp.lpSum(y[j] for j in range(m)) == k
@@ -654,7 +746,7 @@ class GreedyCC(Election):
         """
         self._approve_profile(profile, k)
         m, n = profile.shape
-        B = borda_matrix(profile)
+        B = borda_matrix(profile, k)
 
         is_elected = np.zeros(m, dtype=bool)
         voter_assign_scores = np.zeros(n) - 1
@@ -667,14 +759,80 @@ class GreedyCC(Election):
                     scores[i] = score_gain
 
             # Break ties randomly
-            #scores += np.random.uniform(0, 1, len(scores))
-            #max_cand = np.argmax(scores)
             ranking = tiebreak(scores)
             max_cand = ranking[-1]
             is_elected[max_cand] = True
             voter_assign_scores = np.maximum(voter_assign_scores, B[max_cand, :])
 
         self.objective = np.sum(voter_assign_scores)
+        return np.where(is_elected)[0]
+    
+    
+####################################################################################################
+
+
+class GreedyMonroe(Election):
+    """
+    Elect k candidates using a greedy approximation to the
+    Monroe rule. At every iteration, this rule
+    selects a candidate to add to a growing winner set by greedily selecting
+    a candidate and a proportionally sized voter set for it, 
+    which together give the largest increase to the current assignment scores.
+    
+    NOTE: For now, this assumes that the number of voters n is divisible by the number of winners k.
+    
+    For more information, please see:
+    "What Do Multiwinner Voting Rules Do? An Experiment Over the Two-Dimensional Euclidean Domain"
+    Elkind et al (2019)
+    (https://arxiv.org/abs/1901.09217)
+    
+    
+    Attributes:
+        objective (float): Objective value of the last solved problem.
+    """
+    def __init__(self):
+        self.objective = None
+    
+    
+    def elect(self, profile : NDArray, k : int) -> NDArray:
+        """
+        Elect k candidates using a greedy approximation to the
+        Chamberlain Courant rule.
+
+        Args:
+            profile (np.ndarray): (candidates x voters) Preference Profile.
+            k (int): Number of candidates to elect
+
+        Returns:
+            elected (np.ndarray): Winning candidates
+        """
+        self._approve_profile(profile, k)
+        m, n = profile.shape
+        B = borda_matrix(profile, k)
+        
+        if n % k != 0:
+            raise ValueError("Number of voters must be divisible by the number of winners.")
+        size = n // k
+
+        is_elected = np.zeros(m, dtype=bool)
+        voter_assign_mask = np.zeros(n, dtype=bool)
+
+        for _ in range(k):
+            scores = np.zeros(m)
+            for i in range(m):
+                if not is_elected[i]:
+                    top_scores = np.sort(B[i, ~voter_assign_mask])[::-1][:size]
+                    score_gain = np.sum(top_scores)
+                    scores[i] = score_gain
+
+            # Break ties randomly
+            ranking = tiebreak(scores)
+            max_cand = ranking[-1]
+            is_elected[max_cand] = True
+            available_voters = np.where(~voter_assign_mask)[0]
+            max_cand_voters = tiebreak(B[max_cand, ~voter_assign_mask])[::-1][:size]
+            voter_assign_mask[available_voters[max_cand_voters]] = True
+
         return np.where(is_elected)[0]
 
 
@@ -774,6 +932,18 @@ class PluralityVeto(Election):
         elected = np.where(self.eliminated == 0)[0]
         return elected
 
+
+####################################################################################################
+
+
+class CommitteeVeto(PluralityVeto):
+    """
+    Elect k candidates with the Committee Veto mechanism. This is really identical to PluralityVeto,
+    but should be run with a special preference profile constructed 
+    over all possible comittees (Just helpful to have another class with a different name).
+    """
+    pass
+        
 
 ####################################################################################################
 
