@@ -11,15 +11,23 @@ from .elections import (
     STV,
     ChamberlinCourant,
     Monroe,
+    Harmonic,
     GreedyCC,
-    PluralityVeto, 
+    GreedyMonroe,
+    PluralityVeto,
+    CommitteeVeto,
     ExpandingApprovals, 
     OMRD, 
     SMRD, 
     DMRD,
 )
 
-from .spatial_generation import Spatial, GroupSpatial, ProbabilisticGroupSpatial
+from .spatial_generation import (
+    Spatial,
+    GroupSpatial,
+    ProbabilisticGroupSpatial,
+    RankedSpatial,
+)
 
 from .measurements import (
     cost_array,
