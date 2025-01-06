@@ -2,7 +2,7 @@ import numpy as np
 from metric_voting import *
 
 
-scot_profile = np.load('../../data/scot-elex/aberdeen_2022_ward11.npy')
+scot_profile = np.load('data/scot-elex/aberdeen_2022_ward11.npy')
 
 m = scot_profile.shape[0]
 n = scot_profile.shape[1]
@@ -42,8 +42,10 @@ np.random.seed(918717)
 f = 'data/aberdeen_2022_ward11_results.npz'
 
 generator_input = [
-    {'profile': scot_profile,
-     'candidate_positions': candidate_positions}
+    {'n': n,
+    'm': m,
+    'profile': scot_profile,
+    'candidate_positions': candidate_positions}
 ]
 
 result_list = samples(

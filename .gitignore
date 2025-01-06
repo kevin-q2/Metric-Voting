@@ -166,9 +166,8 @@ cython_debug/
 figures/*
 figures/older
 data/*
-! data/4bloc.npz
-! data/2bloc_new.npz
-! data/2bloc_worst.npz
+! data/four_bloc/4bloc_100voters.npz
+! data/two_bloc/2bloc_100voters.npz
 ! data/scot-elex/*.npy
 *.sh
 *.txt

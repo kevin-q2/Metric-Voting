@@ -622,6 +622,8 @@ class RankedSpatial:
 
     def generate(
         self,
+        n : int,
+        m : int,
         profile : NDArray,
         candidate_positions : NDArray,
         candidate_labels : Optional[NDArray] = None,
@@ -659,13 +661,22 @@ class RankedSpatial:
             voter_labels (NDArray): A length n array where each element i contains the
                 group label for voter i.
         """
-        if profile.shape[0] != candidate_positions.shape[0]:
+        if profile.shape[0] != m:
             raise ValueError(
-                "Number of candidates in profile does not "
-                "match number of candidates in the position array."
+                "Number of candidates in profile does not match number of candidates given."
             )
             
-        m,n = profile.shape
+        if profile.shape[1] != n:
+            raise ValueError(
+                "Number of voters in profile does not match number of voters given."
+            )
+            
+        if candidate_positions.shape[0] != m:
+            raise ValueError(
+                "Number of candidates in the position array "
+                "does not match number of candidates given."
+            )
+            
         _,d = candidate_positions.shape
         
         voter_positions = np.zeros((n,d))
