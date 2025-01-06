@@ -166,13 +166,13 @@ cython_debug/
 figures/*
 figures/older
 data/*
-! data/2bloc.npz
 ! data/4bloc.npz
 ! data/2bloc_new.npz
 ! data/2bloc_worst.npz
 *.sh
 *.txt
 
+batch/
 batch/four_party_sample_collect2.py
 batch/four_party_sample_collect3.py
 batch/two_party_sample_collect2.py

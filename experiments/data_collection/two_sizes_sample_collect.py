@@ -39,7 +39,7 @@ two_party_generator = GroupSpatial(
 )
 
 # Define elections
-elections_dict = {SNTV:{}, Bloc:{}, Borda:{}, Harmonic:{'solver' : 'GUROBI_CMD'},
+elections_dict = {SNTV:{}, Bloc:{}, Borda:{},
                   STV:{'transfer_type' : 'weighted-fractional'},
                  ChamberlinCourant:{'solver' : 'GUROBI_CMD'}, GreedyCC:{},
                   Monroe:{'solver' : 'GUROBI_CMD'}, GreedyMonroe:{}, 
@@ -54,10 +54,10 @@ n_samples = 10000
 np.random.seed(918717)
 
 # and sample from them
-f = 'data/2sizes.npz'
+f = 'data/2sizes_two_.npz'
 
 generator_input = [
-    {'voter_group_sizes': [100 - i, i], 'candidate_group_sizes': [m]} for i in range(0, 105, 5)
+    {'voter_group_sizes': [100 - i, i], 'candidate_group_sizes': [m]} for i in range(50, 105, 5)
 ]
 
 result_list = samples(
