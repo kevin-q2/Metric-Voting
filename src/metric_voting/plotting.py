@@ -52,12 +52,13 @@ def plot_winner_distribution(
         output_file (str, optional): Filepath to save the plot to. If None, the plot will
             be displayed but not saved.
     """
-    elections = [_ for _ in results.keys() if _ not in ['voters', 'candidates', 'labels']]
+    elections = [_ for _ in results.keys() if _ not in 
+                 ['voters', 'candidates', 'voter_labels', 'candidate_labels']]
     voter_color = colors[0]
     candidate_color = colors[1]
     winner_color = colors[2]
     
-    fig, axes = plt.subplots(3, len(elections) + 1, **fig_params)
+    fig, axes = plt.subplots(len(elections) + 1, 3, **fig_params)
     for i, ax in enumerate(axes.flat):
         ax.set_xticklabels([])
         ax.set_yticklabels([])
@@ -103,22 +104,22 @@ def plot_winner_distribution(
     axes[0][0].set_xlabel('')
 
     # Plot the voter and candidate scatter distributions:
-    axes[1][0].scatter(voter_stack_sample.iloc[:,0], voter_stack_sample.iloc[:,1],
+    axes[0][1].scatter(voter_stack_sample.iloc[:,0], voter_stack_sample.iloc[:,1],
                     facecolors = voter_color, edgecolors = 'none', alpha = 0.3, s = 5)
-    axes[1][0].scatter(candidate_stack_sample.iloc[:,0], candidate_stack_sample.iloc[:,1],
+    axes[0][1].scatter(candidate_stack_sample.iloc[:,0], candidate_stack_sample.iloc[:,1],
                     facecolors = candidate_color, edgecolors = 'none', alpha = 0.01, s = 5)
-    axes[1][0].set_xlim(scatter_xlim)
-    axes[1][0].set_ylim(scatter_ylim)
-    axes[1][0].set_title('Scatter')
+    axes[0][1].set_xlim(scatter_xlim)
+    axes[0][1].set_ylim(scatter_ylim)
+    axes[0][1].set_title('Scatter')
 
     # Plot an example voter, candidate setting.
-    axes[2][0].scatter(voter_example[:,0], voter_example[:,1],
+    axes[0][2].scatter(voter_example[:,0], voter_example[:,1],
                     facecolors = voter_color, edgecolors = 'none', alpha = 0.9, s = 30)
-    axes[2][0].scatter(candidate_example[:,0], candidate_example[:,1],
+    axes[0][2].scatter(candidate_example[:,0], candidate_example[:,1],
                     facecolors = candidate_color, edgecolors = 'none', alpha = 0.9, s = 30)
-    axes[2][0].set_xlim(example_xlim)
-    axes[2][0].set_ylim(example_ylim)
-    axes[2][0].set_title('Example')
+    axes[0][2].set_xlim(example_xlim)
+    axes[0][2].set_ylim(example_ylim)
+    axes[0][2].set_title('Example')
 
     # Plot the winner distributions for each election method:
     Candidates = results['candidates']
@@ -150,24 +151,24 @@ def plot_winner_distribution(
         else:
             display_name = name
             
-        axes[0][ax_idx].set_ylabel(display_name)
-        axes[0][ax_idx].set_xlabel('')
+        axes[ax_idx][0].set_ylabel(display_name)
+        axes[ax_idx][0].set_xlabel('')
         
         # Plot the scatter:
-        axes[1][ax_idx].scatter(voter_stack_sample.iloc[:,0], voter_stack_sample.iloc[:,1],
+        axes[ax_idx][1].scatter(voter_stack_sample.iloc[:,0], voter_stack_sample.iloc[:,1],
                     facecolors = voter_color, edgecolors = 'none', alpha = 0.3, s = 5)
-        axes[1][ax_idx].scatter(winner_stack_sample.iloc[:,0], winner_stack_sample.iloc[:,1],
+        axes[ax_idx][1].scatter(winner_stack_sample.iloc[:,0], winner_stack_sample.iloc[:,1],
                         facecolors = winner_color, edgecolors = 'none', alpha = 0.1, s = 5)
-        axes[1][ax_idx].set_xlim(scatter_xlim)
-        axes[1][ax_idx].set_ylim(scatter_ylim)
+        axes[ax_idx][1].set_xlim(scatter_xlim)
+        axes[ax_idx][1].set_ylim(scatter_ylim)
 
         # Plot the example:
-        axes[2][ax_idx].scatter(voter_example[:,0], voter_example[:,1],
+        axes[ax_idx][2].scatter(voter_example[:,0], voter_example[:,1],
                         facecolors = voter_color, edgecolors = 'none', alpha = 0.9, s = 30)
-        axes[2][ax_idx].scatter(winner_example[:,0], winner_example[:,1],
+        axes[ax_idx][2].scatter(winner_example[:,0], winner_example[:,1],
                         facecolors = winner_color, edgecolors = 'none', alpha = 0.9, s = 30)
-        axes[2][ax_idx].set_xlim(example_xlim)
-        axes[2][ax_idx].set_ylim(example_ylim)
+        axes[ax_idx][2].set_xlim(example_xlim)
+        axes[ax_idx][2].set_ylim(example_ylim)
         
 
     legend_elements = [
@@ -224,7 +225,8 @@ def plot_bloc_distribution(
         output_file (str, optional): Filepath to save the plot to. If None, the plot will
             be displayed but not saved.
     """
-    elections = [_ for _ in results.keys() if _ not in ['voters', 'candidates', 'labels']]
+    elections = [_ for _ in results.keys() if _ not in
+                 ['voters', 'candidates', 'voter_labels', 'candidate_labels']]
     voter_color = colors[0]
     candidate_color = colors[1]
     winner_color = colors[2]
@@ -376,7 +378,8 @@ def plot_representatives(
     """
     voter_pos = results['voters']
     candidate_pos = results['candidates']
-    elections = [_ for _ in results.keys() if _ not in ['voters', 'candidates', 'labels']]
+    elections = [_ for _ in results.keys() if _ not in 
+                 ['voters', 'candidates', 'voter_labels', 'candidate_labels']]
     
     voter_color = colors[0]
     candidate_color = colors[1]
@@ -410,8 +413,8 @@ def plot_representatives(
         for j, method in enumerate(methods):
             method_results = e_dict[method]
             # Group
-            bloc = np.where(method_results['labels'] == 1)[0]
-            other_voters = np.where(method_results['labels'] == 0)[0]
+            bloc = np.where(method_results['voter_labels'] == 1)[0]
+            other_voters = np.where(method_results['voter_labels'] == 0)[0]
             reps = np.where(method_results['reps'] == 1)[0]
             other_winners = np.array([w for w in winners if w not in reps])
             axes[j][i].scatter(voter_pos[other_voters,0], voter_pos[other_voters,1],

@@ -49,6 +49,7 @@ from .utils import (
     random_voter_bloc,
 )
 
+
 from .plotting import (
     plot_winner_distribution,
     plot_bloc_distribution,
