@@ -33,7 +33,7 @@ elections_dict = {SNTV:{}, Bloc:{}, Borda:{},
 
 
 # Number of samples to use
-n_samples = 100
+n_samples = 1000
 
 # set the seed for deterministic results:
 np.random.seed(918717)
