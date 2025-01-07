@@ -650,7 +650,8 @@ class Harmonic(Election):
     def __init__(
         self,
         scoring_scheme : Callable = lambda x, y, z: 1 if z <= y else 0,
-        solver : str = 'PULP_CBC_CMD'):
+        solver : str = 'PULP_CBC_CMD'
+    ):
         self.scoring_scheme = scoring_scheme
         self.solver = pulp.getSolver(solver, msg = False)
     
