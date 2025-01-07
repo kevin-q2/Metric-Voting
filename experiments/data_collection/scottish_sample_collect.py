@@ -1,7 +1,9 @@
 import numpy as np
-from sklearn.clustering import KMeans
+from sklearn.cluster import KMeans
 from metric_voting import *
 
+# set the seed for deterministic results:
+np.random.seed(918717)
 
 scot_profile = np.load('data/scot-elex/aberdeen_2022_ward11.npy')
 
@@ -57,9 +59,6 @@ elections_dict = {SNTV:{}, Bloc:{}, Borda:{},
 
 # Number of samples to use
 n_samples = 100
-
-# set the seed for deterministic results:
-np.random.seed(918717)
 
 # and sample from them
 f = 'data/scot-elex/aberdeen_2022_ward11_results.npz'
