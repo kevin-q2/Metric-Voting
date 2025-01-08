@@ -376,65 +376,10 @@ def worst_random_group_inefficiency(
             worst_bloc = bloc
     
     return worst_score, worst_bloc    
-    
-
-def heuristic_worst_bloc(cst_array: NDArray, winner_indices: NDArray) -> NDArray:
-    """
-    Given a cost array and a set of winning candidates, finds a cohesive 
-    voter bloc with large inefficiency score.
-    
-    Args:
-        cst_array (np.ndarray): (m x n) Array of costs with 
-            each entry i,j computed as the distance from candidate i to voter j. 
-        winner_indices (np.ndarray[int]): Length k array of winning candidate indices.
-    
-    Returns:
-        heuristic_bloc (np.ndarray) : Indices of voters in the worst bloc found.
-    """
-    m,n = cst_array.shape
-    k = len(winner_indices)
-    
-    heuristic_bloc = None
-    heuristic_size = None
-    heuristic_score = -1
-    
-    for s in range(1, k + 1):
-        size = math.ceil(s * n/k)
-        for comb in combinations(range(m), s):
-            sum_of_distances = np.sum(cst_array[list(comb), :], axis = 0)
-            closest = tiebreak(sum_of_distances)[:size]
-            closest_mask = np.zeros(n, dtype = int)
-            closest_mask[closest] = 1
-            score = group_inefficiency(cst_array, winner_indices, closest_mask, bloc_label=1)
-                
-            if np.isclose(score,heuristic_score, atol = 1e-8):
-                # if scores are close enough to be considered equal,
-                # Take the bloc with the larger size.
-                if size > heuristic_size:
-                    heuristic_score = score
-                    heuristic_size = size
-                    heuristic_bloc = closest
-                # if sizes are equal, break ties randomly.
-                else:
-                    if len(heuristic_bloc.shape) == 1:
-                        heuristic_bloc = np.array([heuristic_bloc]) 
-                    heuristic_bloc = np.vstack((heuristic_bloc, closest))
-                        
-            elif score > heuristic_score:
-                heuristic_score = score
-                heuristic_size = size
-                heuristic_bloc = closest
-
-    if len(heuristic_bloc.shape) > 1:
-        random_idx = np.random.randint(0, heuristic_bloc.shape[0])
-        heuristic_bloc = heuristic_bloc[random_idx]
-        
-    return heuristic_bloc
-
 
    
 
-def heuristic_worst_bloc2(
+def heuristic_worst_bloc(
     cst_array: NDArray,
     winner_indices: NDArray,
     max_size : int = None
@@ -464,7 +409,13 @@ def heuristic_worst_bloc2(
     
     for s in range(1, max_size + 1):
         size = math.ceil(s * n/k)
-        for comb in combinations(range(m), s):
+        if s == k:
+            # all combinations will produce the same result
+            combs = [range(s)]
+        else:
+            combs = combinations(range(m), s)
+        
+        for comb in combs:
             sum_of_distances = np.sum(cst_array[list(comb), :], axis = 0)
             closest = tiebreak(sum_of_distances)[:size]
             closest_mask = np.zeros(n, dtype = int)

@@ -20,8 +20,8 @@ colors = ["#0099cd","#ffca5d","#00cd99","#99cd00","#cd0099","#9900cd","#8dd3c7",
 
 colors = colors[:6] + colors[-12::2]
 
-input_file = 'data/two_bloc/2bloc.npz'
-output_file = 'figures/2bloc.png'
+input_file = 'data/hourglass/samples.npz'
+output_file = 'figures/hourglass/distribution.png'
 
 loaded_data = np.load(input_file)
 result_dict = {key: loaded_data[key] for key in loaded_data.files}

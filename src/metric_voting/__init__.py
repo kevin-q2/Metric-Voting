@@ -11,7 +11,7 @@ from .elections import (
     STV,
     ChamberlinCourant,
     Monroe,
-    Harmonic,
+    PAV,
     GreedyCC,
     GreedyMonroe,
     PluralityVeto,
@@ -45,7 +45,6 @@ from .measurements import (
     q_costs, 
     q_cost_array,
     heuristic_worst_bloc,
-    heuristic_worst_bloc2,
 )
 
 from .utils import (
@@ -62,5 +61,5 @@ from .utils import (
 from .plotting import (
     plot_winner_distribution,
     plot_bloc_distribution,
-    plot_representatives,
+    plot_ineff_example,
 )

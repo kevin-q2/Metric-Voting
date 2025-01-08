@@ -620,7 +620,7 @@ class Monroe(Election):
 ####################################################################################################
 
 
-class Harmonic(Election):
+class PAV(Election):
     """
     Elect k candidates with the harmonic comittee scoring mechanism..
     This function uses an integer linear program to find a winner set which

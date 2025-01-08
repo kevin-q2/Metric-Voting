@@ -1,10 +1,10 @@
 import numpy as np
-from metric_voting import Harmonic
+from metric_voting import PAV
 from metric_voting import uniform_profile
 
 
 def test_basic_profile(basic_profile):
-    E = Harmonic()
+    E = PAV()
     assert set(E.elect(basic_profile, 1).tolist()) == {3}
     assert E.objective == 4
     assert set(E.elect(basic_profile, 2).tolist()) == {0,3}
@@ -15,7 +15,7 @@ def test_basic_profile(basic_profile):
     
     
 def test_num_winners():
-    E = Harmonic()
+    E = PAV()
     for _ in range(10):
         profile = uniform_profile(200, 10)
         rand_k = np.random.randint(1, 10 + 1)

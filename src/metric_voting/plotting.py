@@ -346,14 +346,14 @@ def plot_bloc_distribution(
 ####################################################################################################
 
 
-def plot_representatives(
+def plot_ineff_example(
     results : Dict[str, NDArray],
     fig_params : Dict[str, Any],
     colors : List[str],
     output_file : str = None
 ):
     """
-    Plots the blocs and representatives from a computed set of results. 
+    Plots an example inefficiencies for different voter blocs in a single election setting. 
     
     Args:
         results (dict[str, np.ndarray]): Dictionary with strings as keys and their corresponding
@@ -376,18 +376,19 @@ def plot_representatives(
         output_file (str, optional): Filepath to save the plot to. If None, the plot will
             be displayed but not saved.
     """
-    voter_pos = results['voters']
-    candidate_pos = results['candidates']
-    elections = [_ for _ in results.keys() if _ not in 
-                 ['voters', 'candidates', 'voter_labels', 'candidate_labels']]
-    
     voter_color = colors[0]
     candidate_color = colors[1]
     winner_color = colors[2]
     bloc_color = colors[3]
     reps_color = colors[4]
     
-    fig, axes = plt.subplots(4, len(elections), **fig_params)
+    voter_pos = results['voters']
+    candidate_pos = results['candidates']
+    elections = [_ for _ in results.keys() if _ not in 
+                 ['voters', 'candidates', 'voter_labels', 'candidate_labels']]
+    methods = [method for method in results[elections[0]].keys() if method != 'winners']
+    
+    fig, axes = plt.subplots(len(methods), len(elections), **fig_params)
     for i, ax in enumerate(axes.flat):
         ax.set_xticklabels([])
         ax.set_yticklabels([])
@@ -395,7 +396,7 @@ def plot_representatives(
         ax.set_ylabel('')
     
     # Set x and y limits for scatter and example plots:
-    epsilon = 0.01
+    epsilon = 0.1
     ymin = np.min((np.min(voter_pos[:,1]), np.min(candidate_pos[:,1])))
     ymax = np.max((np.max(voter_pos[:,1]), np.max(candidate_pos[:,1])))
     xmin = np.min((np.min(voter_pos[:,0]), np.min(candidate_pos[:,0])))
@@ -413,8 +414,8 @@ def plot_representatives(
         for j, method in enumerate(methods):
             method_results = e_dict[method]
             # Group
-            bloc = np.where(method_results['voter_labels'] == 1)[0]
-            other_voters = np.where(method_results['voter_labels'] == 0)[0]
+            bloc = np.where(method_results['labels'] == 1)[0]
+            other_voters = np.where(method_results['labels'] == 0)[0]
             reps = np.where(method_results['reps'] == 1)[0]
             other_winners = np.array([w for w in winners if w not in reps])
             axes[j][i].scatter(voter_pos[other_voters,0], voter_pos[other_voters,1],
@@ -432,14 +433,20 @@ def plot_representatives(
                 axes[j][i].set_ylabel(method.title())
                 #axes[j][i].set_xlabel('')
                 
-            axes[j][i].text(xmax - 2, ymax - 1, str(np.round(method_results['ineff'], 2)))
+            axes[j][i].text(1, 1,
+                            str(np.round(method_results['ineff'], 2)),
+                            transform = axes[j][i].transAxes,
+                            verticalalignment = 'top',
+                            horizontalalignment = 'right',    
+                        )
         
 
     legend_elements = [
         Line2D([0], [0], marker = 'o', color=voter_color, linestyle = 'None', label='voters'),
         Line2D([0], [0], marker = 'o', color=winner_color, linestyle = 'None', label='winners'),
         Line2D([0], [0], marker = 'o', color=bloc_color, linestyle = 'None', label='bloc'),
-        Line2D([0], [0], marker = 'o', color=reps_color, linestyle = 'None', label='representatives'),
+        Line2D([0], [0], marker = 'o', color=reps_color, 
+               linestyle = 'None', label='representatives'),
         ]
 
     fig.legend(handles=legend_elements, loc='lower center', bbox_to_anchor=(0.5, 0.06), ncol=4)
