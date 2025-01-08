@@ -45,6 +45,7 @@ from .measurements import (
     q_costs, 
     q_cost_array,
     heuristic_worst_bloc,
+    heuristic_worst_bloc2,
 )
 
 from .utils import (
