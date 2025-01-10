@@ -3,7 +3,7 @@ from metric_voting.measurements import *
 
 
 np.random.seed(918717)
-input_file = 'data/two_bloc/2bloc.npz'
+input_file = 'data/two_bloc/samples.npz'
 output_file = 'data/two_bloc/worst_bloc.npz'
 
 loaded_data = np.load(input_file)
