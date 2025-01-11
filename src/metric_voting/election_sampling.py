@@ -132,7 +132,7 @@ def samples(
             result_dict["candidate_labels"][i] = clabels
             for name, idxs in W.items():
                 winner_mask = np.zeros(m, dtype=bool)
-                winner_mask[idxs] = True
+                winner_mask[idxs.astype(np.int32)] = True
                 result_dict[name][i] = winner_mask
                 
 

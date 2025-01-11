@@ -55,10 +55,10 @@ n_samples = 10000
 np.random.seed(918717)
 
 # and sample from them
-f = 'data/two_sizes/samples.npz'
+f = 'data/two_sizes/samples2_.npz'
 
 generator_input = [
-    {'voter_group_sizes': [100 - i, i], 'candidate_group_sizes': [m]} for i in range(0, 105, 5)
+    {'voter_group_sizes': [100 - i, i], 'candidate_group_sizes': [m]} for i in range(55, 105, 5)
 ]
 
 result_list = samples(

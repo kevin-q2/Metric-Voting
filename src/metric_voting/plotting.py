@@ -416,7 +416,7 @@ def plot_ineff_example(
             method_results = e_dict[method]
             # Group
             bloc = np.where(method_results['labels'] == 1)[0]
-            other_voters = np.where(method_results['labels'] == 0)[0]
+            other_voters = np.where(method_results['labels'] != 1)[0]
             reps = np.where(method_results['reps'] == 1)[0]
             other_winners = np.array([w for w in np.where(winners)[0] if w not in reps], 
                                      dtype = np.int32)
