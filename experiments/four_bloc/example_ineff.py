@@ -68,29 +68,26 @@ for E, params in elections_dict.items():
     e_dict['winners'] = winner_mask
     
     bloc_label = 1
+    
     # single group ineff
     group_mask = voter_labels
-    group_reps1 = proportional_assignment(cst_array[winners, :], group_mask, bloc_label, k)
-    group_reps2 = proportional_assignment(cst_array[winners, :], group_mask, 1 - bloc_label, k)
-    group_rep_mask1 = np.zeros(m, dtype=bool)
-    group_rep_mask2 = np.zeros(m, dtype=bool)
-    group_rep_mask1[winners[group_reps1]] = True
-    group_rep_mask2[winners[group_reps2]] = True
-    group_ineff1 = group_inefficiency(cst_array, winners, group_mask, bloc_label)
-    group_ineff2 = group_inefficiency(cst_array, winners, group_mask, 1 - bloc_label)
+    group_rep_mask = None
+    group_ineff = -1
     
-    if group_ineff1 > group_ineff2:
-        e_dict['group'] = {
+    for lab in np.unique(group_mask):
+        lab_group_ineff = group_inefficiency(cst_array, winners, group_mask, lab)
+        if lab_group_ineff > group_ineff:
+            group_ineff = lab_group_ineff
+            group_reps = proportional_assignment(cst_array[winners, :], group_mask, lab, k)
+            group_rep_mask = np.zeros(m, dtype=bool)
+            group_rep_mask[winners[group_reps]] = True
+    
+    
+    e_dict['group'] = {
             'labels' : group_mask,
-            'reps' : group_rep_mask1,
-            'ineff' : group_ineff1
-        }
-    else:
-        e_dict['group'] = {
-            'labels' : 1 - group_mask,
-            'reps' : group_rep_mask2,
-            'ineff' : group_ineff2
-        }
+            'reps' : group_rep_mask,
+            'ineff' : group_ineff
+    }
 
     # overall group ineff
     overall_mask = np.ones(n, dtype = int)
