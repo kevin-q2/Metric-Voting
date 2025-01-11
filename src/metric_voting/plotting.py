@@ -408,6 +408,7 @@ def plot_ineff_example(
     for i,name in enumerate(elections):
         e_dict = results[name]
         winners = e_dict['winners']
+        other_candidates = ~winners
         axes[0][i].set_title(name)
 
         methods = [method for method in e_dict.keys() if method != 'winners']
@@ -417,11 +418,14 @@ def plot_ineff_example(
             bloc = np.where(method_results['labels'] == 1)[0]
             other_voters = np.where(method_results['labels'] == 0)[0]
             reps = np.where(method_results['reps'] == 1)[0]
-            other_winners = np.array([w for w in winners if w not in reps])
+            other_winners = np.array([w for w in np.where(winners)[0] if w not in reps], 
+                                     dtype = np.int32)
             axes[j][i].scatter(voter_pos[other_voters,0], voter_pos[other_voters,1],
                             facecolors = voter_color, edgecolors = 'none', alpha = 0.9, s = 20)
             axes[j][i].scatter(voter_pos[bloc,0], voter_pos[bloc,1],
                         facecolors = bloc_color, edgecolors = 'none', alpha = 0.9, s = 20)
+            axes[j][i].scatter(candidate_pos[other_candidates,0], candidate_pos[other_candidates,1],
+                        facecolors = candidate_color, edgecolors = 'none', alpha = 0.9, s = 30)
             axes[j][i].scatter(candidate_pos[other_winners,0], candidate_pos[other_winners,1],
                             facecolors = winner_color, edgecolors = 'none', alpha = 0.9, s = 30)
             axes[j][i].scatter(candidate_pos[reps,0], candidate_pos[reps,1],
@@ -443,13 +447,14 @@ def plot_ineff_example(
 
     legend_elements = [
         Line2D([0], [0], marker = 'o', color=voter_color, linestyle = 'None', label='voters'),
+        Line2D([0], [0], marker = 'o', color=candidate_color, linestyle = 'None', label='candidates'),
         Line2D([0], [0], marker = 'o', color=winner_color, linestyle = 'None', label='winners'),
         Line2D([0], [0], marker = 'o', color=bloc_color, linestyle = 'None', label='bloc'),
         Line2D([0], [0], marker = 'o', color=reps_color, 
                linestyle = 'None', label='representatives'),
         ]
 
-    fig.legend(handles=legend_elements, loc='lower center', bbox_to_anchor=(0.5, 0.06), ncol=4)
+    fig.legend(handles=legend_elements, loc='lower center', bbox_to_anchor=(0.5, 0.03), ncol=3)
     
     if output_file is not None:
         plt.savefig(output_file, bbox_inches='tight')
