@@ -15,9 +15,9 @@ k = 4
 # Means for each of the 2 Gaussian distributions
 means = [[0, -2], [0, 2]]
 stds = [1/3, 1/3]  # Standard deviations for each Gaussian
-two_party_G = [500,500]  # Group Sizes
+group_sizes = [500,500]  # Group Sizes
 
-voter_params = [{'loc': None, 'scale': None, 'size': 2} for _ in range(len(two_party_G))]
+voter_params = [{'loc': None, 'scale': None, 'size': 2} for _ in range(len(group_sizes))]
 for i,mean in enumerate(means):
     voter_params[i]['loc'] = mean
 
@@ -28,10 +28,10 @@ candidate_params = [{'low': -3, 'high': 3, 'size': 2}]
 
 distance = lambda point1, point2: np.linalg.norm(point1 - point2)
 
-two_party_generator = GroupSpatial(
+generator = GroupSpatial(
     n_voter_groups = 2,
     n_candidate_groups = 1, 
-    voter_dist_fns = [np.random.normal]*len(two_party_G),
+    voter_dist_fns = [np.random.normal]*len(group_sizes),
     voter_dist_fn_params = voter_params,
     candidate_dist_fns = [np.random.uniform],
     candidate_dist_fn_params = candidate_params,
@@ -48,6 +48,7 @@ elections_dict = {SNTV:{}, Bloc:{}, Borda:{},
                   ExpandingApprovals: {},
                  SMRD:{}, OMRD:{}, DMRD:{'rho': 0.5}}
 
+
 # Number of samples to use
 n_samples = 10000
 
@@ -55,22 +56,19 @@ n_samples = 10000
 np.random.seed(918717)
 
 # and sample from them
-f = 'data/two_sizes/samples.npz'
+f = 'data/two_bloc/thousand_voters/samples.npz'
 
 generator_input = [
-    {'voter_group_sizes': [100 - i, i], 'candidate_group_sizes': [m]} for i in range(0, 105, 5)
+    {'voter_group_sizes': group_sizes,
+     'candidate_group_sizes': [m]}
 ]
 
 result_list = samples(
     n_samples,
-    two_party_generator,
+    generator,
     elections_dict,
     generator_input,
     k,
     dim = 2,
     filename = f
 )
-
-
-
-

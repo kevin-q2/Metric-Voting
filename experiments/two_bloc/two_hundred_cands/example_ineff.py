@@ -4,18 +4,18 @@ import math
 from metric_voting import *
 
 np.random.seed(918717)
-filename = 'data/two_bloc/example_ineff.npz'
+filename = 'data/two_bloc/two_hundred_cands/example_ineff.npz'
 
 # Choose number of voters n and the number of candidates m
 n = 1000
-m = 20
+m = 200
 
 # Choose the number of winners for the election
 k = 4
 
 # Means and standard deviations for each of the two voter distributions
-means = [[0, -1], [0, 1]]
-stds = [1/6, 1/6]
+means = [[0, -2], [0, 2]]
+stds = [1/3, 1/3]
 voter_group_sizes = [500,500]  # Group Sizes
 
 # Create a list of voter parameters -- with each set of parameters being a dict
@@ -27,7 +27,7 @@ for i,std in enumerate(stds):
     voter_params[i]['scale'] = std
     
 # Define the single set of candidate paramters
-candidate_params = [{'low': -2, 'high': 2, 'size': 2}]
+candidate_params = [{'low': -3, 'high': 3, 'size': 2}]
 
 # define a distance function between voters and candidates
 distance = lambda point1, point2: np.linalg.norm(point1 - point2)

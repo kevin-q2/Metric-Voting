@@ -3,8 +3,8 @@ from metric_voting.measurements import *
 
 
 np.random.seed(918717)
-input_file = 'data/four_bloc/samples.npz'
-output_file = 'data/four_bloc/worst_bloc.npz'
+input_file = 'data/two_bloc/thousand_voters/samples.npz'
+output_file = 'data/two_bloc/thousand_voters/worst_bloc.npz'
 
 loaded_data = np.load(input_file)
 result_dict = {key: loaded_data[key] for key in loaded_data.files}
