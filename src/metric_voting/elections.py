@@ -93,19 +93,7 @@ class SNTV(Election):
 
         Returns:
             elected (np.ndarray): Winning candidates
-        """
-        '''
-        m,_ = profile.shape
-        self._approve_profile(profile, k)        
-        first_choice_votes = profile[0, :]
-        counts = np.zeros(m)
-        for c in first_choice_votes:
-            counts[c] += 1
-        ranking = tiebreak(counts)[::-1]
-        elected = ranking[:k]
-        #return elected
-        '''
-        
+        """        
         m,_ = profile.shape
         self._approve_profile(profile, k)   
         elected_mask = np.zeros(m, dtype = bool)
