@@ -22,6 +22,28 @@ def test_tie_break(profile_with_fp_tie):
     assert 450 < counts[0] and counts[0] < 550
     assert 450 < counts[1] and counts[1] < 550
     
+
+def test_rounds(profile_with_sntv_rounds):
+    E = SNTV()
+    assert set(E.elect(profile_with_sntv_rounds, 3).tolist()) == set([0,1,2])
+    
+    
+def test_tied_rounds(profile_with_tied_sntv_rounds):
+    E = SNTV()
+    
+    samples = 1000
+    winners = np.zeros((samples, 3), dtype = int)
+    for i in range(samples):
+        winners[i] = E.elect(profile_with_tied_sntv_rounds, 3)
+        
+    unique, counts = np.unique(winners, return_counts = True)
+    assert len(unique) == 4
+    assert counts[1] == samples
+    assert counts[2] == samples 
+    assert np.isclose(counts[0]/samples, 0.5, atol = 0.05)
+    assert np.isclose(counts[3]/samples, 0.5, atol = 0.05)
+
+    
 def test_num_winners():
     E = SNTV()
     for _ in range(10):

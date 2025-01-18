@@ -36,6 +36,26 @@ def profile_with_fp_tie():
        [3, 2, 3, 2, 1, 3, 0, 2, 3, 3],
        [2, 1, 2, 1, 2, 2, 2, 1, 1, 2]
     ])
+   
+
+@pytest.fixture
+def profile_with_sntv_rounds():
+   return np.array([
+      [1, 1, 1, 1, 1, 1, 1, 1, 2, 2],
+      [0, 0, 0, 0, 0, 0, 3, 3, 3, 3],
+      [3, 3, 3, 3, 3, 3, 0, 0, 0, 0],
+      [2, 2, 2, 2, 2, 2, 2, 2, 1, 1]
+    ])   
+   
+@pytest.fixture
+def profile_with_tied_sntv_rounds():
+   return np.array([
+      [1, 1, 1, 1, 1, 1, 1, 1, 2, 2],
+      [0, 0, 0, 0, 0, 3, 3, 3, 3, 3],
+      [3, 3, 3, 3, 3, 0, 0, 0, 0, 0],
+      [2, 2, 2, 2, 2, 2, 2, 2, 1, 1]
+    ])   
+
     
 @pytest.fixture
 def profile_with_bloc_tie():
