@@ -39,14 +39,23 @@ generator = GroupSpatial(
 )
 
 # Define elections
-elections_dict = {SNTV:{}, Bloc:{}, Borda:{},
-                  STV:{'transfer_type' : 'weighted-fractional'},
-                 ChamberlinCourant:{'solver' : 'GUROBI_CMD'}, GreedyCC:{},
-                  Monroe:{'solver' : 'GUROBI_CMD'}, GreedyMonroe:{}, 
-                  PAV:{'solver' : 'GUROBI_CMD'},
-                  PluralityVeto:{}, CommitteeVeto:{'q':k}, 
-                  ExpandingApprovals: {},
-                 SMRD:{}, OMRD:{}, DMRD:{'rho': 0.5}}
+elections_dict = {
+    SNTV:{},
+    Bloc:{},
+    Borda:{},
+    STV:{'transfer_type' : 'weighted-fractional'},
+    ChamberlinCourant:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/overlapping/cc.log'},
+    GreedyCC:{},
+    Monroe:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/overlapping/monroe.log'},
+    GreedyMonroe:{}, 
+    PAV:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/overlapping/pav.log'},
+    PluralityVeto:{},
+    CommitteeVeto:{'q':k}, 
+    ExpandingApprovals: {},
+    SMRD:{},
+    OMRD:{},
+    DMRD:{'rho': 0.5}
+}
 
 
 # Number of samples to use

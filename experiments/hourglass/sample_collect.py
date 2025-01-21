@@ -42,14 +42,24 @@ generator = GroupSpatial(n_voter_groups = 2, n_candidate_groups = 1,
                        distance_fn = distance)
 
 # Define elections
-elections_dict = {SNTV:{}, Bloc:{}, Borda:{},
-                  STV:{'transfer_type' : 'weighted-fractional'},
-                 ChamberlinCourant:{'solver' : 'GUROBI_CMD'}, GreedyCC:{},
-                  Monroe:{'solver' : 'GUROBI_CMD'}, GreedyMonroe:{}, 
-                  PAV:{'solver' : 'GUROBI_CMD'},
-                  PluralityVeto:{}, CommitteeVeto:{'q':k}, 
-                  ExpandingApprovals: {},
-                 SMRD:{}, OMRD:{}, DMRD:{'rho': 0.5}}
+# Define elections
+elections_dict = {
+    SNTV:{},
+    Bloc:{},
+    Borda:{},
+    STV:{'transfer_type' : 'weighted-fractional'},
+    ChamberlinCourant:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/hourglass/cc.log'},
+    GreedyCC:{},
+    Monroe:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/hourglass/monroe.log'},
+    GreedyMonroe:{}, 
+    PAV:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/hourglass/pav.log'},
+    PluralityVeto:{},
+    CommitteeVeto:{'q':k}, 
+    ExpandingApprovals: {},
+    SMRD:{},
+    OMRD:{},
+    DMRD:{'rho': 0.5}
+}
 
 
 # Number of samples to use

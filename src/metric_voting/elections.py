@@ -499,11 +499,18 @@ class ChamberlinCourant(Election):
             Some options 'PULP_CBC_CMD' and 'GUROBI_CMD' (requires licesnse).
             Defaults to 'PULP_CBC_CMD', which uses PuLPs default coin and branch bound solver.
             
+        log_path (str, optional): Path to log file for solver output. Defaults to 'cc.log'.
+            
     Attributes:
         objective (float): Objective value of the last solved problem.
     """
-    def __init__(self, solver : str = 'PULP_CBC_CMD'):
-        self.solver = pulp.getSolver(solver, msg = False)
+    def __init__(self, solver : str = 'PULP_CBC_CMD', log_path : str = None):
+        self.log_path = log_path
+        self.solver = pulp.getSolver(
+            solver,
+            msg = False,
+            logPath = log_path
+        )
         self.objective = None
         
     
@@ -518,6 +525,11 @@ class ChamberlinCourant(Election):
         Returns:
             elected (np.ndarray): Winning candidates
         """
+        # Creates a new log file for each election
+        if self.log_path is not None:
+            with open(self.log_path, 'w') as f:
+                f.write('')
+                
         self._approve_profile(profile, k)       
         m, n = profile.shape
         B = borda_matrix(profile, k).T  # n x m matrix after transpose
@@ -574,12 +586,19 @@ class Monroe(Election):
             
             Some options 'PULP_CBC_CMD' and 'GUROBI_CMD' (requires licesnse).
             Defaults to 'PULP_CBC_CMD', which uses PuLPs default coin and branch bound solver.
+            
+        log_path (str, optional): Path to log file for solver output. Defaults to 'monroe.log'.
     
     Attributes:
         objective (float): Objective value of the last solved problem.
     """
-    def __init__(self, solver : str = 'PULP_CBC_CMD'):
-        self.solver = pulp.getSolver(solver, msg = False)
+    def __init__(self, solver : str = 'PULP_CBC_CMD', log_path : str = None):
+        self.log_path = log_path
+        self.solver = pulp.getSolver(
+            solver,
+            msg = False,
+            logPath = log_path  
+        )
     
     
     def elect(self, profile : NDArray, k : int) -> NDArray: 
@@ -592,6 +611,11 @@ class Monroe(Election):
         Returns:
             elected (np.ndarray): Winning candidates
         """
+        # Creates a new log file for each election
+        if self.log_path is not None:
+            with open(self.log_path, 'w') as f:
+                f.write('')
+                
         self._approve_profile(profile, k)
         m, n = profile.shape
         B = borda_matrix(profile, k).T  # n x m matrix after transpose
@@ -658,6 +682,8 @@ class PAV(Election):
             
             Some options 'PULP_CBC_CMD' and 'GUROBI_CMD' (requires licesnse).
             Defaults to 'PULP_CBC_CMD', which uses PuLPs default coin and branch bound solver.
+            
+        log_path (str, optional): Path to log file for solver output. Defaults to None.
     
     Attributes:
         objective (float): Objective value of the last solved problem.
@@ -665,10 +691,16 @@ class PAV(Election):
     def __init__(
         self,
         scoring_scheme : Callable = lambda x, y, z: 1 if z <= y else 0,
-        solver : str = 'PULP_CBC_CMD'
+        solver : str = 'PULP_CBC_CMD',
+        log_path : str = None
     ):
         self.scoring_scheme = scoring_scheme
-        self.solver = pulp.getSolver(solver, msg = False)
+        self.log_path = log_path
+        self.solver = pulp.getSolver(
+            solver,
+            msg = False,
+            logPath = log_path
+        )
     
     
     def elect(self, profile : NDArray, k : int) -> NDArray: 
@@ -681,6 +713,11 @@ class PAV(Election):
         Returns:
             elected (np.ndarray): Winning candidates
         """
+        # Creates a new log file for each election
+        if self.log_path is not None:
+            with open(self.log_path, 'w') as f:
+                f.write('')
+                
         self._approve_profile(profile, k)
         m, n = profile.shape
         B = borda_matrix(profile, k, self.scoring_scheme).T  # n x m matrix after transpose

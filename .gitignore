@@ -193,6 +193,7 @@ examples/stv_tiebreak.py
 
 experiments/*/*.sh
 experiments/*/*.txt
+experiments/*/*.log
 
 .envrc
 .python-version

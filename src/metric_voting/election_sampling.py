@@ -7,6 +7,7 @@ from .elections import *
 from .measurements import euclidean_cost_array, q_cost_array
 from .utils import cost_array_to_ranking
 
+import pulp
 
 
 
@@ -67,7 +68,11 @@ def election_sample(
             elects = np.array(list(candidate_subsets[elect_subset]))
             
         else:
-            elects = E(**params).elect(profile=profile, k=k)
+            try:
+                elects = E(**params).elect(profile=profile, k=k)
+            except pulp.apis.core.PulpSolverError:
+                elects = np.zeros(k, dtype=int) - 1
+                np.save("error_profile.npy", profile)
         
         winners[E.__name__] = elects
 
