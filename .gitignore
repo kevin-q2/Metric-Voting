@@ -190,6 +190,10 @@ data/gaussian.npz
 data/four_gaussian.npz
 
 examples/stv_tiebreak.py
+examples/2bloc.ipynb
+examples/grid.ipynb
+examples/worst_bloc.ipynb
+
 
 experiments/*/*.sh
 experiments/*/*.txt

@@ -427,9 +427,10 @@ def plot_ineff_example(
             axes[j][i].scatter(candidate_pos[other_candidates,0], candidate_pos[other_candidates,1],
                         facecolors = candidate_color, edgecolors = 'none', alpha = 0.9, s = 30)
             axes[j][i].scatter(candidate_pos[other_winners,0], candidate_pos[other_winners,1],
-                            facecolors = winner_color, edgecolors = 'none', alpha = 0.9, s = 30)
+                            facecolors = winner_color, edgecolors = 'black', alpha = 0.9, s = 40)
             axes[j][i].scatter(candidate_pos[reps,0], candidate_pos[reps,1],
-                        facecolors = reps_color, edgecolors = 'none', alpha = 0.9, s = 30)
+                        facecolors = reps_color, edgecolors = 'black', alpha = 0.9, s = 50, 
+                        marker = 'D')
             axes[j][i].set_xlim(xlim)
             axes[j][i].set_ylim(ylim)
 
@@ -448,9 +449,10 @@ def plot_ineff_example(
     legend_elements = [
         Line2D([0], [0], marker = 'o', color=voter_color, linestyle = 'None', label='voters'),
         Line2D([0], [0], marker = 'o', color=candidate_color, linestyle = 'None', label='candidates'),
-        Line2D([0], [0], marker = 'o', color=winner_color, linestyle = 'None', label='winners'),
+        Line2D([0], [0], marker = 'o', color=winner_color, linestyle = 'None', label='winners', 
+               markeredgecolor = 'black'),
         Line2D([0], [0], marker = 'o', color=bloc_color, linestyle = 'None', label='bloc'),
-        Line2D([0], [0], marker = 'o', color=reps_color, 
+        Line2D([0], [0], marker = 'D', color=reps_color, markeredgecolor = 'black', 
                linestyle = 'None', label='representatives'),
         ]
 
