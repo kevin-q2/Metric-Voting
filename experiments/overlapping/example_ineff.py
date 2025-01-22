@@ -14,8 +14,8 @@ m = 20
 k = 4
 
 # Means and standard deviations for each of the two voter distributions
-means = [[0, -1], [0, 1]]
-stds = [1/2, 1/2]
+means = [[0, -2], [0, 2]]
+stds = [1, 1]
 voter_group_sizes = [500,500]  # Group Sizes
 
 # Create a list of voter parameters -- with each set of parameters being a dict
@@ -27,7 +27,7 @@ for i,std in enumerate(stds):
     voter_params[i]['scale'] = std
     
 # Define the single set of candidate paramters
-candidate_params = [{'low': -2, 'high': 2, 'size': 2}]
+candidate_params = [{'low': -3, 'high': 3, 'size': 2}]
 
 # define a distance function between voters and candidates
 distance = lambda point1, point2: np.linalg.norm(point1 - point2)

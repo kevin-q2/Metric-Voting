@@ -25,12 +25,12 @@ def sample_triangle(loc, base, height, direction):
 # Means and standard deviations for each of the two voter distributions
 voter_group_sizes = [500,500]  # Group Sizes
 voter_params = [
-    {'loc' : 1, 'base' : 1, 'height' : 1, 'direction' : -1},
-    {'loc' : -1, 'base' : 1, 'height' : 1, 'direction' : 1}
+    {'loc' : 3, 'base' : 3, 'height' : 3, 'direction' : -1},
+    {'loc' : -3, 'base' : 3, 'height' : 3, 'direction' : 1}
 ]
     
 # Define the single set of candidate paramters
-candidate_params = [{'low': -1, 'high': 1, 'size': 2}]
+candidate_params = [{'low': -3, 'high': 3, 'size': 2}]
 
 # define a distance function between voters and candidates
 distance = lambda point1, point2: np.linalg.norm(point1 - point2)

@@ -11,7 +11,7 @@ n = 1000
 m = 20
 
 # Choose the number of winners for the election
-k = 4
+k = 5
 
 # Means for each of the 4 Normal distributions
 means = [[-2, 0], [2, 0], [0, 2], [0, -2]]

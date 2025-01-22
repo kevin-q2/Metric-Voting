@@ -13,8 +13,8 @@ m = 20
 k = 4 
 
 # Means for each of the 2 Gaussian distributions
-means = [[0, -1], [0, 1]]
-stds = [1/2, 1/2]  # Standard deviations for each Gaussian
+means = [[0, -2], [0, 2]]
+stds = [1, 1]  # Standard deviations for each Gaussian
 group_sizes = [500,500]  # Group Sizes
 
 voter_params = [{'loc': None, 'scale': None, 'size': 2} for _ in range(len(group_sizes))]
@@ -24,7 +24,7 @@ for i,mean in enumerate(means):
 for i,std in enumerate(stds):
     voter_params[i]['scale'] = std
     
-candidate_params = [{'low': -2, 'high': 2, 'size': 2}]
+candidate_params = [{'low': -3, 'high': 3, 'size': 2}]
 
 distance = lambda point1, point2: np.linalg.norm(point1 - point2)
 
