@@ -22,15 +22,15 @@ def election_sample(
     Randomly creates a profile, conducts elections, and records the results.
     Given a ballot generator for creating preference profiles
     from randomly generated metric settings and a dictionary containing a set of election methods
-    and optional key word arguments, a number of voters, and a number of winning candidates.
+    and optional keyword arguments, a number of voters, and a number of winning candidates.
     
     Args:
         generator (Callable, Spatial): Object for generating 
             random preference profiles in metric space.
         elections_dict (dict[Callable Election, dict[str, Any]]): Election mechanism dictionary 
             where keys are election mechanisms and their values are dictionaries with any
-            additional key word arguments.
-        generator_input (Dict[str, Any]): Key word arguments for input to generator.generate()
+            additional keyword arguments.
+        generator_input (Dict[str, Any]): keyword arguments for input to generator.generate()
         k (int): Number of candidates to elect.
 
     Returns:
@@ -56,20 +56,25 @@ def election_sample(
     )
     winners = {}
 
-    for E, params in elections_dict.items():
-        if E.__name__ == "CommitteeVeto" and 'q' in params:
+    for election, params in elections_dict.items():
+        if election.__name__ == "CommitteeVeto":
             # Form the multi-winner plurality veto profile.
             # Assuming Euclidean Distance here!!
-            cst_array = euclidean_cost_array(voter_positions, candidate_positions)
+            if 'q' in params:
+                q = params['q']
+            else:
+                q = k
+            
+            cost_arr = euclidean_cost_array(voter_positions, candidate_positions)
             candidate_subsets = [set(_) for _ in profile[:k,:].T]
-            q_cst_array = q_cost_array(params['q'], cst_array, candidate_subsets)
+            q_cst_array = q_cost_array(q, cost_arr, candidate_subsets)
             q_profile = cost_array_to_ranking(q_cst_array)
-            elect_subset = E().elect(profile=q_profile, k=1)[0]
+            elect_subset = election().elect(profile=q_profile, k=1)[0]
             elects = np.array(list(candidate_subsets[elect_subset]))
             
         else:
             try:
-                elects = E(**params).elect(profile=profile, k=k)
+                elects = election(**params).elect(profile=profile, k=k)
             except pulp.apis.core.PulpSolverError:
                 elects = np.zeros(k, dtype=int) - 1
                 np.save("error_profile.npy", profile)
@@ -100,7 +105,7 @@ def samples(
         generator (list[Spatial]): List of spatial objects for creating random preference profiles.
         elections_dict (dict[Callable Election, dict[str, Any]]): Election mechanism dictionary 
             where keys are election mechanisms and their values are dictionaries with any additional
-            key word arguments.
+            keyword arguments.
         generator_input (List[dict[str, Any]]): Dictionary for input settings to 
             generator.generate().
         k (int): Number of candidates to elect.
@@ -112,6 +117,18 @@ def samples(
     Returns:
         results_list (List[Dict[str, np.ndarray]]): List of dictionaries where each dictionary
             contains the results of the election sampling
+            
+            
+    Example Usage:
+    ```
+    generator = GroupSpatial(...group spatial params ...)
+    elections_dict = {Borda : {}, STV : {'transfer_type' : 'weighted-fractional'}}
+    # Input for the generator.generate() method:
+    generator_input = [{'voter_group_sizes': group_sizes, 'candidate_group_sizes': [m]}]
+    sample_result_list = 
+        samples(1000, generator, elections_dict, generator_input, k = 3, dim = 2, filename = f)
+)
+    ```
     """
     results_list = []
     for gidx, gen_input in enumerate(generator_input):
@@ -123,7 +140,8 @@ def samples(
             m = sum(gen_input["candidate_group_sizes"])
         
 
-        result_dict = {E.__name__: np.zeros((s, m), dtype = bool) for E in elections_dict.keys()}
+        result_dict = {election.__name__: np.zeros((s, m), dtype = bool)
+                       for election in elections_dict.keys()}
         result_dict["voters"] = [np.zeros((s, n, dim))] * s
         result_dict["candidates"] = [np.zeros((s, m, dim))] * s
         result_dict["voter_labels"] = [np.zeros((s, n), dtype = int)] * s
@@ -153,64 +171,3 @@ def samples(
 
 
 ####################################################################################################
-# Some (not working!) attempts to parallelize this
-
-'''
-class election_sample:
-    """
-    Given a ballot generator for creating preference profiles
-    from randomly generated metric settings and a dictionary containing a set of election methods
-    and optional key word arguments, a number of voters, and a number of winning candidates. 
-    Randomly creates a profile and then conducts elections with the given mechanisms 
-    recording and outputting the results. 
-
-    Args:
-        generator (Spatial): Object for creating random preference profiles.
-        elections_dict (dict[callable election, dict[str, Any]]): Election mechanism dictionary where keys are
-            election mechanisms and their values are dictionaries with any additional key word arguments.
-        gen_input (int OR list[int]): Input to generator.generate() (different for Spatial vs GroupSpatial)
-        k (int): Number of candidates to elect.
-
-    Returns:
-        voter_positions (np.ndarray): Numpy matrix where each row encodes a voters position
-            in the metric space. 
-        
-        candidate_positions (np.ndarray): Numpy matrix where each row encodes a candidate's
-            position in the metric space.
-            
-        winners (dict[str, list[int]]): Dictionary with election names as keys and their corresponding
-            winners indices as values. Querying candidate_positions[winners['STV'],:] for example gives
-            the winning candidates positions in the metric space. 
-            
-        voter_labels (list[int]): List with group labels for voters. 
-    """
-    def __init__(self, generator, elections_dict, gen_input, k):
-        self.generator = generator
-        self.elections_dict = elections_dict
-        self.gen_input = gen_input
-        self.k = k
-    
-    def sample(self, i):
-        profile, candidate_positions, voter_positions, voter_labels = self.generator.generate(self.gen_input)
-        winners = {}
-        
-        for E, params in self.elections_dict.items():
-            elects = E(profile = profile, k = self.k, **params)
-            winners[E.__name__] = elects
-            
-        return voter_positions, candidate_positions, winners, voter_labels
-
-
-def sample_task(generator, elections_dict, gen_input, k):
-    V, C, W, vlabels = election_sample(generator, elections_dict, gen_input, k)
-    task_result = {'V': V, 'C': C, 'W': W, 'vlabels': vlabels}
-    return task_result
-'''
-
-
-"""
-sampler = election_sample(generator, elections_dict, gen_input, k)
-with Pool(cpu_count) as p:
-    #task_results = p.starmap(sample_task, pool_args)
-    task_results = p.map(sampler.sample, range(s))
-"""

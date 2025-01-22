@@ -488,6 +488,15 @@ class ChamberlinCourant(Election):
     assignment of voters to candidates to maximize the assignment scores
     (where assignment scores are calculated with the borda score).
     
+    This is based on work from the following papers:
+    "Achieving Fully Proportional Representation: Approximability Results"
+    Skowron et al (2013)
+    (https://arxiv.org/abs/1312.4026)
+    
+    "What Do Multiwinner Voting Rules Do? An Experiment Over the Two-Dimensional Euclidean Domain"
+    Elkind et al (2019)
+    (https://arxiv.org/abs/1901.09217)
+    
     NOTE: As far as I can tell, these solvers output deterministic answers,
     even in cases where there are multiple optimal solutions...Not sure how to handle this.
     
@@ -575,6 +584,15 @@ class Monroe(Election):
     (where assignment scores are calculated with the borda score).
     With the added constraint that each candidate can only represent
     exactly floor(n/k) or ceiling(n/k) voters.
+    
+    This is based on work from the following papers:
+    "Achieving Fully Proportional Representation: Approximability Results"
+    Skowron et al (2013)
+    (https://arxiv.org/abs/1312.4026)
+    
+    "What Do Multiwinner Voting Rules Do? An Experiment Over the Two-Dimensional Euclidean Domain"
+    Elkind et al (2019)
+    (https://arxiv.org/abs/1901.09217)
     
     NOTE: As far as I can tell, these solvers output deterministic answers,
     even in cases where there are multiple optimal solutions...Not sure how to handle this.
@@ -772,10 +790,14 @@ class GreedyCC(Election):
     selects a candidate to add to a growing winner set by greedily selecting
     the candidate which gives the best increase to the current assignment scores.
     
-    For more information, please see the paper:
+    For more information, please see the papers:
     "Budgeted Social Choice: From Consensus to Personalized Decision Making" 
     - Lu and Boutilier (2011)
     (https://www.cs.toronto.edu/~tl/papers/LuBoutilier_budgeted_IJCAI11.pdf)
+    
+    "What Do Multiwinner Voting Rules Do? An Experiment Over the Two-Dimensional Euclidean Domain"
+    Elkind et al (2019)
+    (https://arxiv.org/abs/1901.09217)
     
     
     Attributes:
