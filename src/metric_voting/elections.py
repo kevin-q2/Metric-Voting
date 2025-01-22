@@ -925,14 +925,18 @@ class PluralityVeto(Election):
                 self.last_place_indices[i] -= 1
                 
     
-    def initialize(self):
+    def initialize(self, k):
         """
         Counts first place votes and eliminates any candidates with 0.
+        
+        Args:
+            k (int): Number of candidates to elect.
         """
         # Count initial plurality scores
-        first_choice_votes = self.profile[0, :]
-        for c in first_choice_votes:
-            self.candidate_scores[c] += 1
+        first_choice_votes = self.profile[:k, :]
+        mentions, counts = np.unique(first_choice_votes, return_counts = True)
+        for i,c in enumerate(mentions):
+            self.candidate_scores[c] += counts[i]
 
         # Find candidates with 0 plurality score
         zero_scores = np.where(self.candidate_scores == 0)[0]
@@ -964,7 +968,7 @@ class PluralityVeto(Election):
         self.eliminated = np.zeros(self.m)
         self.last_place_indices = np.zeros(self.n, dtype=int) + self.m - 1 # Last place index
         
-        self.initialize()
+        self.initialize(k)
         eliminated_count = len(np.where(self.eliminated == 1)[0])
 
         # Veto in a randomize order
@@ -1035,22 +1039,6 @@ class ExpandingApprovals(Election):
             self.uncovered_mask[c_voters] = False
         
     
-    def voter_approve(self, v : int, t : int):
-        """
-        Approve the voter's t-th ranked candidate if they have not 
-        yet been elected, and check if they have reached the quota.
-        
-        Args:
-            voter (int): Voter index.
-            t (int): Rank of the voter's candidate.
-        """
-        if self.uncovered_mask[v]:
-            c = self.profile[t, v]
-            if not self.elected_mask[c]:
-                self.neighborhood[c, v] = 1
-                self.candidate_check_elect(c)
-        
-    
     def approval_round(self, t : int):
         """
         Conduct an approval round of the expanding approvals rule.
@@ -1059,7 +1047,11 @@ class ExpandingApprovals(Election):
             t (int): Round number.
         """
         for v in self.random_order:
-            self.voter_approve(v, t)
+            if self.uncovered_mask[v]:
+                c = self.profile[t, v]
+                if not self.elected_mask[c]:
+                    self.neighborhood[c, v] = 1
+                    self.candidate_check_elect(c)
         
     
     def elect(self, profile : NDArray, k : int) -> NDArray:
@@ -1080,10 +1072,10 @@ class ExpandingApprovals(Election):
         self.uncovered_mask = np.ones(n, dtype=bool)
         self.elected_mask = np.zeros(m, dtype=bool)
         self.neighborhood = np.zeros(profile.shape)
-        self.random_order = np.random.permutation(n)
 
         # Main election loop
         for t in range(m):
+            self.random_order = np.random.permutation(n)
             self.approval_round(t)
             
         # Elect remaining candidates if needed
@@ -1124,7 +1116,7 @@ class SMRD(Election):
         m, n = profile.shape
         elected = np.zeros(k, dtype=int) - 1
         elected_mask = np.zeros(m, dtype=bool)
-        dictators = np.random.choice(range(n), size=k, replace=False)
+        dictators = np.random.choice(range(n), size=k, replace=True)
 
         for i in range(k):
             dictator = dictators[i]
@@ -1221,11 +1213,17 @@ class DMRD(Election):
 
             # Find who voted for the winner
             first_choice_votes = self.profile[self.voter_indices, np.arange(self.n)]
-            mask = first_choice_votes == winner
+            support = first_choice_votes == winner
+            others = ~support
+            
+            if np.sum(others) > 0:
+                renorm_factor = np.sum(voter_probability[support])/np.sum(voter_probability[others])
+                renorm_factor = 1 + (1 - self.rho) * renorm_factor 
 
-            # Adjusts voter probability for the next round
-            voter_probability[mask] *= self.rho
-            voter_probability /= np.sum(voter_probability)
+                # Adjusts voter probability for the next round
+                voter_probability[support] *= self.rho
+                voter_probability[others] *= renorm_factor
+                #voter_probability /= np.sum(voter_probability)
 
             # Effectively removes winning candidate from profile
             self.update_indices()
@@ -1234,65 +1232,3 @@ class DMRD(Election):
 
 
 ####################################################################################################
-
-'''
-# Not Currently in Use:
-def PRD(profile, k, p=None, q=None):
-    """
-    Elect k candidates with k iterations of Proportional Random Dictator (PRD).
-    At each iteration, with probability p choose a winner with
-    the proportional to q's rule. With probability (1-p) instead choose a
-    winner with RandomDictator. Remove that candidate from all preference profiles and repeat.
-
-    Args:
-        profile (np.ndarray): (candidates x voters) Preference Profile.
-        k (int): Number of candidates to elect
-        p (float, optional): probability of proportional to q's rule
-        q (float, optional): power in proportional to q's
-
-    Returns:
-        elected (np.ndarray): Winning candidates
-    """
-    if not approve_profile(profile):
-        raise ValueError("Profile not in correct form.")
-
-    m, n = profile.shape
-
-    # Default setting
-    if p is None:
-        p = 1 / (m - 1)
-    if q is None:
-        q = 2
-
-    voter_probability = np.ones(n) / n
-    voter_indices = np.zeros(n, dtype=int)
-    elected = np.zeros(k, dtype=int) - 1
-    for i in range(k):
-        first_choice_votes = profile[voter_indices, np.arange(n)]
-
-        coin_flip = np.random.uniform()
-        if coin_flip <= p:
-            cands, counts = np.unique(first_choice_votes, return_counts=True)
-            prob = np.power(counts * 1.0, q)
-            prob /= np.sum(prob)
-            winner = np.random.choice(cands, p=prob)
-        else:
-            # winner = np.random.choice(first_choice_votes)
-            dictator = np.random.choice(range(n), p=voter_probability)
-            winner = profile[voter_indices[dictator], dictator]
-
-        elected[i] = winner
-
-        # removes winning candidate from profile
-        mask = first_choice_votes == winner
-
-        # Adjusts voter probability for the next round
-        # (If we did random dictator)
-        voter_probability[mask] *= 0.8
-        voter_probability /= np.sum(voter_probability)
-
-        # Effectively removes winning candidate from profile
-        voter_indices[mask] += 1
-
-    return elected
-'''
