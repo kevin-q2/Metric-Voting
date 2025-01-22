@@ -753,8 +753,8 @@ class PAV(Election):
         B = borda_matrix(profile, k, self.scoring_scheme).T  # n x m matrix after transpose
         
         # Randomly permute the candidates to break ties
-        candidate_permutation = np.random.permutation(m)
-        B = B[:, candidate_permutation]
+        #candidate_permutation = np.random.permutation(m)
+        #B = B[:, candidate_permutation]
 
         problem = pulp.LpProblem("PAV", pulp.LpMaximize)
 
@@ -783,9 +783,11 @@ class PAV(Election):
         # A voter can only be assigned to a candidate if that candidate is elected
         for i in range(n):
             for j in range(m):
+                # Voter  i's jth ranked candidate:
+                #c = np.where(candidate_permutation == profile[j, i])[0][0]
+                c = profile[j, i]
                 for l in range(k):
-                    problem += x[i, j, l] <= y[j]
-
+                    problem += x[i, j, l] <= y[c]
 
         # Elect exactly k candidates
         problem += pulp.lpSum(y[j] for j in range(m)) == k
@@ -794,7 +796,7 @@ class PAV(Election):
         self.objective = pulp.value(problem.objective)
         elected = np.array([j for j in range(m) if pulp.value(y[j]) == 1])
         # Translate back to original indices:
-        elected = candidate_permutation[elected]
+        #elected = candidate_permutation[elected]
         return elected
     
     
@@ -918,14 +920,14 @@ class GreedyMonroe(Election):
                     score_gain = np.sum(top_scores)
                     scores[i] = score_gain
 
-            # Break ties randomly
-            ranking = tiebreak(scores)
-            max_cand = ranking[-1]
+            # Break ties randomly amongst candidates who are not yet elected:
+            not_elected = np.where(~is_elected)[0]
+            ranking = tiebreak(scores[not_elected])
+            max_cand = not_elected[ranking[-1]]
             is_elected[max_cand] = True
             available_voters = np.where(~voter_assign_mask)[0]
             max_cand_voters = tiebreak(B[max_cand, ~voter_assign_mask])[::-1][:size]
             voter_assign_mask[available_voters[max_cand_voters]] = True
-
         return np.where(is_elected)[0]
 
 
