@@ -60,6 +60,5 @@ from .utils import (
 
 from .plotting import (
     plot_winner_distribution,
-    plot_bloc_distribution,
     plot_ineff_example,
 )

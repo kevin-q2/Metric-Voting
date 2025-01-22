@@ -3,7 +3,7 @@ import pandas as pd
 import math
 from metric_voting import *
 
-np.random.seed(918717)
+np.random.seed(9187178)
 filename = 'data/two_bloc/thousand_voters/example_ineff.npz'
 
 # Choose number of voters n and the number of candidates m

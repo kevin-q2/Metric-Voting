@@ -20,6 +20,15 @@ colors = ["#0099cd","#ffca5d","#00cd99","#99cd00","#cd0099","#9900cd","#8dd3c7",
 
 colors = colors[:6] + colors[-12::2]
 
+plt.rcParams.update({
+    "pgf.texsystem": "pdflatex",
+    "font.family": "serif",
+    "font.serif": [],
+    "text.usetex": True,
+    "pgf.rcfonts": False,
+    "font.size": 22
+})
+
 input_file = 'data/two_bloc/thousand_voters/samples.npz'
 output_file = 'figures/two_bloc/thousand_voters/distribution.png'
 
@@ -32,7 +41,7 @@ plot_winner_distribution(
     results = result_dict,
     fig_params = {'figsize' : (10, 24), 'dpi' : 200},
     colors = [colors[0], colors[-2], colors[5]],
-    sample_fraction = 0.05,
+    sample_fraction = 0.25,
     random_seed = 42,
     output_file = output_file
 )
