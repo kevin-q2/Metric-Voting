@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+from itertools import permutations
 
 @pytest.fixture
 def incomplete_profile():
@@ -27,6 +28,20 @@ def basic_profile():
        [3, 2, 3, 2, 1, 3, 0, 1, 3, 3],
        [2, 1, 2, 1, 2, 2, 1, 2, 1, 2]
     ])
+   
+@pytest.fixture
+def agreement_profile():
+   return np.array([
+      [0,0,0,0,0],
+      [1,1,1,1,1],
+      [2,2,2,2,2],
+      [3,3,3,3,3],
+   ])
+   
+@pytest.fixture
+def permutation_profile():
+   return np.array(list(permutations([0,1,2,3]))).T
+
 
 @pytest.fixture
 def profile_with_fp_tie():
@@ -154,7 +169,7 @@ def monroe_vs_chamberlin_profile():
        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
     ])
 
-
+'''
 @pytest.fixture
 def plurality_veto_elim_profile():
    return np.array([
@@ -163,6 +178,16 @@ def plurality_veto_elim_profile():
       [3,1,2,3,2,1],
       [2,3,1,2,1,2]
    ])
+'''
+@pytest.fixture
+def plurality_veto_elim_profile():
+   return np.array([
+      [1,2,3,1,3,3],
+      [3,1,2,3,2,1],
+      [0,0,0,0,0,0],
+      [2,3,1,2,1,2]
+   ])
+   
    
 @pytest.fixture
 def plurality_veto_elim_tie_profile():
