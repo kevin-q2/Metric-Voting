@@ -542,6 +542,10 @@ class ChamberlinCourant(Election):
         self._approve_profile(profile, k)       
         m, n = profile.shape
         B = borda_matrix(profile, k).T  # n x m matrix after transpose
+        
+        # Randomly permute the candidates to break ties
+        candidate_permutation = np.random.permutation(m)
+        B = B[:, candidate_permutation]
 
         problem = pulp.LpProblem("Chamberlin-Courant", pulp.LpMaximize)
 
@@ -568,8 +572,10 @@ class ChamberlinCourant(Election):
         problem += pulp.lpSum(y[j] for j in range(m)) == k
 
         problem.solve(self.solver)
-        elected = np.array([j for j in range(m) if pulp.value(y[j]) == 1])
         self.objective = pulp.value(problem.objective)
+        elected = np.array([j for j in range(m) if pulp.value(y[j]) == 1])
+        # Translate back to original indices:
+        elected = candidate_permutation[elected]
         return elected
     
     
@@ -637,6 +643,10 @@ class Monroe(Election):
         self._approve_profile(profile, k)
         m, n = profile.shape
         B = borda_matrix(profile, k).T  # n x m matrix after transpose
+        
+        # Randomly permute the candidates to break ties
+        candidate_permutation = np.random.permutation(m)
+        B = B[:, candidate_permutation]
 
         problem = pulp.LpProblem("Monroe", pulp.LpMaximize)
 
@@ -669,8 +679,10 @@ class Monroe(Election):
         problem += pulp.lpSum(y[j] for j in range(m)) == k
 
         problem.solve(self.solver)
-        elected = np.array([j for j in range(m) if pulp.value(y[j]) == 1])
         self.objective = pulp.value(problem.objective)
+        elected = np.array([j for j in range(m) if pulp.value(y[j]) == 1])
+        # Translate back to original indices:
+        elected = candidate_permutation[elected]
         return elected
     
     
@@ -739,8 +751,12 @@ class PAV(Election):
         self._approve_profile(profile, k)
         m, n = profile.shape
         B = borda_matrix(profile, k, self.scoring_scheme).T  # n x m matrix after transpose
+        
+        # Randomly permute the candidates to break ties
+        candidate_permutation = np.random.permutation(m)
+        B = B[:, candidate_permutation]
 
-        problem = pulp.LpProblem("Harmonic", pulp.LpMaximize)
+        problem = pulp.LpProblem("PAV", pulp.LpMaximize)
 
         # Voter assignment variable
         x = pulp.LpVariable.dicts(
@@ -775,8 +791,10 @@ class PAV(Election):
         problem += pulp.lpSum(y[j] for j in range(m)) == k
 
         problem.solve(self.solver)
-        elected = np.array([j for j in range(m) if pulp.value(y[j]) == 1])
         self.objective = pulp.value(problem.objective)
+        elected = np.array([j for j in range(m) if pulp.value(y[j]) == 1])
+        # Translate back to original indices:
+        elected = candidate_permutation[elected]
         return elected
     
     

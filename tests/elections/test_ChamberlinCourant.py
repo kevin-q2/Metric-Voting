@@ -25,3 +25,16 @@ def test_num_winners():
         rand_k = np.random.randint(1, 10 + 1)
         assert len(E.elect(profile, rand_k)) == rand_k
         
+
+def test_tiebreak(cc_tie_profile):
+    E = ChamberlinCourant()
+    
+    samples = 1000
+    winners = np.zeros(samples)
+    for i in range(samples):
+        winners[i] = E.elect(cc_tie_profile, 1)[0]
+        
+    unique, counts = np.unique(winners, return_counts=True)
+    assert len(unique) == 2
+    assert np.isclose(counts[0]/samples, 0.5, atol=0.05)
+    assert np.isclose(counts[1]/samples, 0.5, atol=0.05)

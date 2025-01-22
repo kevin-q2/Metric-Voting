@@ -126,7 +126,14 @@ def complex_stv_profile():
       [7, 4, 7, 5, 1, 2, 2, 5, 6, 4, 4, 5, 1, 6, 2, 0, 2, 2, 6, 4],
       [2, 6, 6, 3, 3, 5, 7, 2, 0, 3, 6, 3, 4, 4, 4, 4, 3, 5, 1, 6]
    ])
-   
+
+
+@pytest.fixture
+def cc_tie_profile():
+   return np.array([
+      [0,0,0,1,1,1],
+      [1,1,1,0,0,0]
+   ])
    
 @pytest.fixture
 def basic_monroe_profile():
