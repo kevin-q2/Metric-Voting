@@ -48,7 +48,7 @@ elections_dict = {
     GreedyCC:{},
     Monroe:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/overlapping/monroe.log'},
     GreedyMonroe:{}, 
-    PAV:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/overlapping/pav.log'},
+    #PAV:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/overlapping/pav.log'},
     PluralityVeto:{},
     CommitteeVeto:{'q':k}, 
     ExpandingApprovals: {},

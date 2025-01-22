@@ -52,7 +52,7 @@ elections_dict = {
     GreedyCC:{},
     Monroe:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/hourglass/monroe.log'},
     GreedyMonroe:{}, 
-    PAV:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/hourglass/pav.log'},
+    #PAV:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/hourglass/pav.log'},
     PluralityVeto:{},
     CommitteeVeto:{'q':k}, 
     ExpandingApprovals: {},

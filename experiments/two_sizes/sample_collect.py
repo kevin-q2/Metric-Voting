@@ -48,7 +48,7 @@ elections_dict = {
     GreedyCC:{},
     Monroe:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_sizes/monroe.log'},
     GreedyMonroe:{}, 
-    PAV:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_sizes/pav.log'},
+    #PAV:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_sizes/pav.log'},
     PluralityVeto:{},
     CommitteeVeto:{'q':k}, 
     ExpandingApprovals: {},
@@ -58,7 +58,7 @@ elections_dict = {
 }
 
 # Number of samples to use
-n_samples = 10000
+n_samples = 1000
 
 # set the seed for deterministic results:
 np.random.seed(918717)
@@ -67,7 +67,7 @@ np.random.seed(918717)
 f = 'data/two_sizes/samples.npz'
 
 generator_input = [
-    {'voter_group_sizes': [100 - i, i], 'candidate_group_sizes': [m]} for i in range(0, 105, 5)
+    {'voter_group_sizes': [1000 - i, i], 'candidate_group_sizes': [m]} for i in range(0, 1050, 50)
 ]
 
 result_list = samples(

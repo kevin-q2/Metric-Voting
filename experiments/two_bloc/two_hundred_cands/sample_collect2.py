@@ -65,7 +65,7 @@ n_samples = 10000
 np.random.seed(918717)
 
 # and sample from them
-f = 'data/two_bloc/two_hundred_cands/samples.npz'
+f = 'data/two_bloc/two_hundred_cands/samples2.npz'
 
 generator_input = [
     {'voter_group_sizes': group_sizes,

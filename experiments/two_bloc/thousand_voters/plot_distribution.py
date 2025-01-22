@@ -32,7 +32,7 @@ plot_winner_distribution(
     results = result_dict,
     fig_params = {'figsize' : (10, 24), 'dpi' : 200},
     colors = [colors[0], colors[-2], colors[5]],
-    sample_fraction = 0.25,
+    sample_fraction = 0.05,
     random_seed = 42,
     output_file = output_file
 )

@@ -6,8 +6,8 @@ from metric_voting.elections import *
 
 # Choose number of voters n
 # And the number of candidates m
-n = 1000
-m = 200
+n = 10000
+m = 20
 
 # And the number of winners for the election
 k = 4 
@@ -15,7 +15,7 @@ k = 4
 # Means for each of the 2 Gaussian distributions
 means = [[0, -2], [0, 2]]
 stds = [1/3, 1/3]  # Standard deviations for each Gaussian
-group_sizes = [500,500]  # Group Sizes
+group_sizes = [5000,5000]  # Group Sizes
 
 voter_params = [{'loc': None, 'scale': None, 'size': 2} for _ in range(len(group_sizes))]
 for i,mean in enumerate(means):
@@ -44,11 +44,11 @@ elections_dict = {
     Bloc:{},
     Borda:{},
     STV:{'transfer_type' : 'weighted-fractional'},
-    ChamberlinCourant:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_bloc/two_hundred_cands/cc.log'},
+    ChamberlinCourant:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_bloc/ten_thousand_voters/cc.log'},
     GreedyCC:{},
-    Monroe:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_bloc/two_hundred_cands/monroe.log'},
+    Monroe:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_bloc/ten_thousand_voters/monroe.log'},
     GreedyMonroe:{}, 
-    #PAV:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_bloc/two_hundred_cands/pav.log'},
+    #PAV:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_bloc/ten_thousand_voters/pav.log'},
     PluralityVeto:{},
     CommitteeVeto:{'q':k}, 
     ExpandingApprovals: {},
@@ -65,7 +65,7 @@ n_samples = 10000
 np.random.seed(918717)
 
 # and sample from them
-f = 'data/two_bloc/two_hundred_cands/samples.npz'
+f = 'data/two_bloc/ten_thousand_voters/samples2.npz'
 
 generator_input = [
     {'voter_group_sizes': group_sizes,

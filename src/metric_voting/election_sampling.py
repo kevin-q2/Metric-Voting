@@ -79,7 +79,7 @@ def election_sample(
                 elects = np.zeros(k, dtype=int) - 1
                 np.save("error_profile.npy", profile)
         
-        winners[E.__name__] = elects
+        winners[election.__name__] = elects
 
     return winners, candidate_positions, voter_positions, candidate_labels, voter_labels
 
