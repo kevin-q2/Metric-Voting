@@ -146,6 +146,8 @@ def plot_winner_distribution(
             display_name = 'CC'
         elif name == 'ExpandingApprovals':
             display_name = 'Expanding'
+        elif name == 'Bloc':
+            display_name = 'Block'
         else:
             display_name = name
             
@@ -251,7 +253,11 @@ def plot_ineff_example(
         e_dict = results[name]
         winners = e_dict['winners']
         other_candidates = ~winners
-        axes[0][i].set_title(name)
+        
+        if name == 'Bloc':
+            axes[0][i].set_title('Block')
+        else:
+            axes[0][i].set_title(name)
 
         methods = [method for method in e_dict.keys() if method != 'winners']
         for j, method in enumerate(methods):
@@ -267,7 +273,7 @@ def plot_ineff_example(
             axes[j][i].scatter(voter_pos[bloc,0], voter_pos[bloc,1],
                         facecolors = bloc_color, edgecolors = 'none', alpha = 0.9, s = 20)
             axes[j][i].scatter(candidate_pos[other_candidates,0], candidate_pos[other_candidates,1],
-                        facecolors = candidate_color, edgecolors = 'none', alpha = 0.9, s = 30)
+                        facecolors = candidate_color, edgecolors = 'black', alpha = 0.9, s = 30)
             axes[j][i].scatter(candidate_pos[other_winners,0], candidate_pos[other_winners,1],
                             facecolors = winner_color, edgecolors = 'black', alpha = 0.9, s = 40)
             axes[j][i].scatter(candidate_pos[reps,0], candidate_pos[reps,1],
@@ -292,15 +298,16 @@ def plot_ineff_example(
 
     legend_elements = [
         Line2D([0], [0], marker = 'o', color=voter_color, linestyle = 'None', label='voters'),
-        Line2D([0], [0], marker = 'o', color=candidate_color, linestyle = 'None', label='candidates'),
+        Line2D([0], [0], marker = 'o', color=bloc_color, linestyle = 'None', label='voter bloc'),
+        Line2D([0], [0], marker = 'o', color=candidate_color, linestyle = 'None', label='candidates',
+               markeredgecolor = 'black'),
         Line2D([0], [0], marker = 'o', color=winner_color, linestyle = 'None', label='winners', 
                markeredgecolor = 'black'),
-        Line2D([0], [0], marker = 'o', color=bloc_color, linestyle = 'None', label='bloc'),
         Line2D([0], [0], marker = 'D', color=reps_color, markeredgecolor = 'black', 
                linestyle = 'None', label='representatives'),
         ]
 
-    fig.legend(handles=legend_elements, loc='lower center', bbox_to_anchor=(0.5, 0.016), ncol=3)
+    fig.legend(handles=legend_elements, loc='lower center', bbox_to_anchor=(0.5, 0.014), ncol=3)
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
     if output_file is not None:
         plt.savefig(output_file, bbox_inches='tight')
