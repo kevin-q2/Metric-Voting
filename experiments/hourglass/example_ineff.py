@@ -1,0 +1,125 @@
+import numpy as np
+import pandas as pd
+import math
+from metric_voting import *
+
+np.random.seed(918717)
+filename = 'data/hourglass/example_ineff.npz'
+
+# Choose number of voters n and the number of candidates m
+n = 1000
+m = 20
+
+# Choose the number of winners for the election
+k = 4
+
+
+def sample_triangle(loc, base, height, direction):
+    x = np.random.uniform(low = -base/2, high = base/2)
+    if x > 0:
+        y = direction * np.random.uniform(low = 0, high = -2 * height/base * x + height) + loc
+    if x <= 0:
+        y = direction * np.random.uniform(low = 0, high = 2 * height/base * x + height) + loc
+    return np.array([x,y])
+
+# Means and standard deviations for each of the two voter distributions
+voter_group_sizes = [500,500]  # Group Sizes
+voter_params = [
+    {'loc' : 3, 'base' : 3, 'height' : 3, 'direction' : -1},
+    {'loc' : -3, 'base' : 3, 'height' : 3, 'direction' : 1}
+]
+    
+# Define the single set of candidate paramters
+candidate_params = [{'low': -3, 'high': 3, 'size': 2}]
+
+# define a distance function between voters and candidates
+distance = lambda point1, point2: np.linalg.norm(point1 - point2)
+
+# Create the group spatial generator object!
+generator = GroupSpatial(n_voter_groups = 2, n_candidate_groups = 1,
+                       voter_dist_fns = [sample_triangle, sample_triangle],
+                       voter_dist_fn_params = voter_params,
+                       candidate_dist_fns = [np.random.uniform],
+                       candidate_dist_fn_params = candidate_params,
+                       distance_fn = distance)
+
+
+# Now each call .generate() will make a profile with random candidate and voter positions
+profile, \
+candidate_positions, \
+voter_positions, \
+candidate_labels, \
+voter_labels = generator.generate(voter_group_sizes = voter_group_sizes, 
+                                            candidate_group_sizes = [m])
+
+
+
+# Collect results for different blocs and their representatives
+result_dict = {'voters' : voter_positions, 'candidates' : candidate_positions}
+cst_array = euclidean_cost_array(voter_positions, candidate_positions)
+elections_dict = {Bloc:{}, Borda:{}, STV:{'transfer_type' : 'weighted-fractional'}}
+
+for E, params in elections_dict.items():
+    e_dict = {}
+    name = E.__name__
+    winners = E(**params).elect(profile,k)
+    winner_mask = np.zeros(m, dtype=bool)
+    winner_mask[winners] = True
+    e_dict['winners'] = winner_mask
+    
+    bloc_label = 1
+    # single group ineff
+    group_mask = voter_labels
+    group_reps1 = proportional_assignment(cst_array[winners, :], group_mask, bloc_label, k)
+    group_reps2 = proportional_assignment(cst_array[winners, :], group_mask, 1 - bloc_label, k)
+    group_rep_mask1 = np.zeros(m, dtype=bool)
+    group_rep_mask2 = np.zeros(m, dtype=bool)
+    group_rep_mask1[winners[group_reps1]] = True
+    group_rep_mask2[winners[group_reps2]] = True
+    group_ineff1 = group_inefficiency(cst_array, winners, group_mask, bloc_label)
+    group_ineff2 = group_inefficiency(cst_array, winners, group_mask, 1 - bloc_label)
+    
+    if group_ineff1 > group_ineff2:
+        e_dict['group'] = {
+            'labels' : group_mask,
+            'reps' : group_rep_mask1,
+            'ineff' : group_ineff1
+        }
+    else:
+        e_dict['group'] = {
+            'labels' : 1 - group_mask,
+            'reps' : group_rep_mask2,
+            'ineff' : group_ineff2
+        }
+
+    # overall group ineff
+    overall_mask = np.ones(n, dtype = int)
+    overall_reps = proportional_assignment(cst_array[winners, :], overall_mask, bloc_label, k)
+    overall_rep_mask = np.zeros(m, dtype=bool)
+    overall_rep_mask[winners[overall_reps]] = True
+    overall_ineff = group_inefficiency(cst_array, winners, overall_mask, bloc_label)
+    e_dict['overall'] = {
+        'labels' : overall_mask,
+        'reps' : overall_rep_mask,
+        'ineff' : overall_ineff
+    }
+        
+    heuristic_bloc = heuristic_worst_bloc(cst_array, winners, max_size = None)
+    heuristic_mask = np.zeros(n, dtype = int)
+    heuristic_mask[heuristic_bloc] = 1
+        
+    heuristic_reps = proportional_assignment(cst_array[winners, :], heuristic_mask, bloc_label, k)
+    heuristic_rep_mask = np.zeros(m, dtype=bool)
+    heuristic_rep_mask[winners[heuristic_reps]] = True
+    heuristic_ineff = group_inefficiency(cst_array, winners, heuristic_mask, bloc_label)
+    e_dict['heuristic'] = {
+        'labels' : heuristic_mask,
+        'reps' : heuristic_rep_mask,
+        'ineff' : heuristic_ineff
+    }
+    
+    result_dict[name] = e_dict
+    
+    
+np.savez_compressed(filename, **result_dict)
+    
