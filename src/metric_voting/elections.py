@@ -492,13 +492,32 @@ class ChamberlinCourant(Election):
     "Achieving Fully Proportional Representation: Approximability Results"
     Skowron et al (2013)
     (https://arxiv.org/abs/1312.4026)
+    NOTE: See section 4.7 starting on page 32.
     
     "What Do Multiwinner Voting Rules Do? An Experiment Over the Two-Dimensional Euclidean Domain"
     Elkind et al (2019)
     (https://arxiv.org/abs/1901.09217)
     
-    NOTE: As far as I can tell, these solvers output deterministic answers,
-    even in cases where there are multiple optimal solutions...Not sure how to handle this.
+    LP definition:
+    - Let B be the Borda matrix of the profile, where B(i, j) is the Borda score of candidate j 
+        in voter i's ranking.
+    - Let x(i, j) be a binary representation variable indicating if voter i is assigned 
+        candidate j as its representative.
+    - Let y(j) be a binary variable indicating if candidate j is elected.    
+    
+    Objective:    
+        max: sum_{over all voters i and candidates j} Borda-Sore(i, j) * x(i, j)
+    
+    subject to:
+        1) sum_{over all candidates j} x(i, j) = 1 for all i 
+            (each voter must get exactly one representative)
+            
+        2)  x(i, j) <= y(j) for all i, j
+            (a voter can only be assigned to a candidate if that candidate is elected)
+            
+        3) sum_{over all candidates j} y(j) = k
+            (exactly k candidates are elected)
+
     
     Args:
         solver (str, optional): Solver for the integer linear program. These are taken 
@@ -549,7 +568,7 @@ class ChamberlinCourant(Election):
 
         problem = pulp.LpProblem("Chamberlin-Courant", pulp.LpMaximize)
 
-        # Voter assignment variable (voter j gets assigned to candidate i)
+        # Voter assignment variable (voter i gets assigned to candidate j)
         x = pulp.LpVariable.dicts(
             "x", ((i, j) for i in range(n) for j in range(m)), cat="Binary"
         )
@@ -595,13 +614,35 @@ class Monroe(Election):
     "Achieving Fully Proportional Representation: Approximability Results"
     Skowron et al (2013)
     (https://arxiv.org/abs/1312.4026)
+    NOTE: See section 4.7 starting on page 32.
     
     "What Do Multiwinner Voting Rules Do? An Experiment Over the Two-Dimensional Euclidean Domain"
     Elkind et al (2019)
     (https://arxiv.org/abs/1901.09217)
     
-    NOTE: As far as I can tell, these solvers output deterministic answers,
-    even in cases where there are multiple optimal solutions...Not sure how to handle this.
+    
+    LP definition:
+    - Let B be the Borda matrix of the profile, where B(i, j) is the Borda score of candidate j 
+        in voter i's ranking.
+    - Let x(i, j) be a binary representation variable indicating if voter i is assigned 
+        candidate j as its representative.
+    - Let y(j) be a binary variable indicating if candidate j is elected.    
+    
+    Objective:    
+        max: sum_{over all voters i and candidates j} Borda-Sore(i, j) * x(i, j)
+    
+    subject to:
+        1) sum_{over all candidates j} x(i, j) = 1 for all i 
+            (each voter must get exactly one representative)
+            
+        2)  x(i, j) <= y(j) for all i, j
+            (a voter can only be assigned to a candidate if that candidate is elected)
+            
+        3) sum_{over all candidates j} y(j) = k
+            (exactly k candidates are elected)
+            
+        4) floor(n/k) * y(j) <= sum_{over all voters i} x(i, j) <= ceiling(n/k) * y(j) for all j
+            (*Monroe constraint* -- each candidate can only represent a certain number of voters)
     
     Args:
         solver (str, optional): Solver for the integer linear program. These are taken 
@@ -691,6 +732,8 @@ class Monroe(Election):
 
 class PAV(Election):
     """
+    NOTE: This is not working as expected right now ... I will plan to fix it as soon as possible.
+    
     Elect k candidates with the harmonic comittee scoring mechanism..
     This function uses an integer linear program to find a winner set which
     maximizes the sum of harmonic adjusted committee scores.
@@ -701,9 +744,10 @@ class PAV(Election):
     "What Do Multiwinner Voting Rules Do? An Experiment Over the Two-Dimensional Euclidean Domain"
     Elkind et al (2019)
     (https://arxiv.org/abs/1901.09217)
+    NOTE: See section E in the appendix (it is labeled as harmonic borda there, but 
+        is the same linear program, just with a different scoring mechanism).
     
-    NOTE: As far as I can tell, these solvers output deterministic answers,
-    even in cases where there are multiple optimal solutions...Not sure how to handle this.
+    NOTE: Define linear program here once this is fixed.
     
     Args:
         solver (str, optional): Solver for the integer linear program. These are taken 

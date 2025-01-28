@@ -19,7 +19,7 @@ def election_sample(
     k : int
 ) -> Tuple[NDArray, NDArray, Dict[str, NDArray], NDArray]:
     """
-    Randomly creates a profile, conducts elections, and records the results.
+    Randomly creates a single preference profile, conducts elections, and records the results.
     Given a ballot generator for creating preference profiles
     from randomly generated metric settings and a dictionary containing a set of election methods
     and optional keyword arguments, a number of voters, and a number of winning candidates.
@@ -45,6 +45,35 @@ def election_sample(
             in the metric space.
         candidate_labels (NDArray): Length m array of group labels for voters.
         voter_labels (NDArray): Length n array of group labels for voters.
+        
+    Example Usage and Extra information:
+    - A generator object is taken as one of the classes from spatial_generation.py, 
+        please see the full documentation there for more specific parameter info.
+        
+    - Its purpose is to generate random voter/candidate positions in metric space, 
+        and will generally take parameters which define the distributions to sample from.
+        
+    - generator_input, on the other hand, is used specifically for the .generate() method of 
+        a generator object. Here it is given as a *single* dictionary containing
+        the input voter and candidate group sizes to pass to the .generate() method.
+        
+    - The elections_dict is a dictionary where the keys are election mechanisms objects 
+        from elections.py, and values are dictionaries with any parameters to use 
+        when initializing that election class.
+    ```
+    generator = GroupSpatial(...group spatial params ...)
+    elections_dict = {Borda : {}, STV : {'transfer_type' : 'weighted-fractional'}}
+    # Input for the generator.generate() method:
+    generator_input = {'voter_group_sizes': group_sizes, 'candidate_group_sizes': [m]}
+    winners, candidate_positions, voter_positions, candidate_labels, voter_labels = 
+        election_sample(
+            generator,
+            elections_dict,
+            generator_input,
+            k = 3
+        )
+    )
+    ```
     """
 
     (profile,
@@ -67,8 +96,8 @@ def election_sample(
             
             cost_arr = euclidean_cost_array(voter_positions, candidate_positions)
             candidate_subsets = [set(_) for _ in profile[:k,:].T]
-            q_cst_array = q_cost_array(q, cost_arr, candidate_subsets)
-            q_profile = cost_array_to_ranking(q_cst_array)
+            q_cost_arr = q_cost_array(q, cost_arr, candidate_subsets)
+            q_profile = cost_array_to_ranking(q_cost_arr)
             elect_subset = election().elect(profile=q_profile, k=1)[0]
             elects = np.array(list(candidate_subsets[elect_subset]))
             
@@ -97,7 +126,7 @@ def samples(
     filename : str = None
 ):
     """
-    For a number of samples, s, sample elections from election_sample()
+    For a given number of samples, sample elections with election_sample()
     and record the results.
 
     Args:
@@ -119,7 +148,22 @@ def samples(
             contains the results of the election sampling
             
             
-    Example Usage:
+    Example Usage and Extra information:
+    - A generator object is taken as one of the classes from spatial_generation.py, 
+        please see the full documentation there for more specific parameter info.
+        
+    - Its purpose is to generate random voter/candidate positions in metric space, 
+        and will generally take parameters which define the distributions to sample from.
+        
+    - generator_input, on the other hand, is used specifically for the .generate() method of 
+        a generator object. It is a *list* of dictionaries where each dictionary contains
+        the input voter and candidate group sizes to pass to the .generate() method.
+        For every set of input parameters in the list, a new experiment is performed --
+        this is useful for experiments in which the sizes of voter/candidate groups are varied.
+        
+    - The elections_dict is a dictionary where the keys are election mechanisms objects 
+        from elections.py, and values are dictionaries with any parameters to use 
+        when initializing that election class.
     ```
     generator = GroupSpatial(...group spatial params ...)
     elections_dict = {Borda : {}, STV : {'transfer_type' : 'weighted-fractional'}}
@@ -127,7 +171,7 @@ def samples(
     generator_input = [{'voter_group_sizes': group_sizes, 'candidate_group_sizes': [m]}]
     sample_result_list = 
         samples(1000, generator, elections_dict, generator_input, k = 3, dim = 2, filename = f)
-)
+    )
     ```
     """
     results_list = []
