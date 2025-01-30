@@ -59,7 +59,7 @@ elections_dict = {
 
 
 # Number of samples to use
-n_samples = 10
+n_samples = 10000
 
 # set the seed for deterministic results:
 np.random.seed(918717)
@@ -79,5 +79,6 @@ result_list = parallel_samples(
     generator_input,
     k,
     dim = 2,
+    cpu_count = 16,
     filename = f
 )

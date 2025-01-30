@@ -229,6 +229,7 @@ def parallel_samples(
     generator_input : List[Dict[str, Any]],
     k : int,
     dim : int = 2,
+    cpu_count : int = 8,
     filename : str = None
 ):
     """
@@ -247,6 +248,7 @@ def parallel_samples(
         k (int): Number of candidates to elect.
         dim (int, optional): Number of dimensions in a voter or candidate position 
             in the metric space, defaults to 2d.
+	cpu_count (int, optional): Number of available cpus to use for processing. Defaults to 8.
         filename (str, optional): Filename to save results to, optional but if None results
             will not be saved.
 
@@ -298,7 +300,7 @@ def parallel_samples(
         result_dict["voter_labels"] = [np.zeros((s, n), dtype = int)] * s
         result_dict["candidate_labels"] = [np.zeros((s, m), dtype = int)] * s
         
-        results = Parallel(n_jobs=-1)(
+        results = Parallel(n_jobs=cpu_count)(
             delayed(sample_task)(generator, elections_dict, gen_input, k) for _ in range(s)
         )
          
