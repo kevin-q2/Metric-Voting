@@ -1,6 +1,6 @@
 import numpy as np
 from metric_voting.spatial_generation import *
-from metric_voting.election_sampling import samples
+from metric_voting.election_sampling import samples, parallel_samples
 from metric_voting.elections import *
 
 
@@ -59,7 +59,7 @@ elections_dict = {
 
 
 # Number of samples to use
-n_samples = 10000
+n_samples = 10
 
 # set the seed for deterministic results:
 np.random.seed(918717)
@@ -72,7 +72,7 @@ generator_input = [
      'candidate_group_sizes': [m]}
 ]
 
-result_list = samples(
+result_list = parallel_samples(
     n_samples,
     generator,
     elections_dict,

@@ -1,6 +1,7 @@
 from .election_sampling import (
     election_sample,
     samples,
+    parallel_samples,
 )
 
 from .elections import (
