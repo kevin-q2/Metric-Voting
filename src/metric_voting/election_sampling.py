@@ -1,5 +1,4 @@
 import numpy as np
-from multiprocessing import Pool
 from joblib import Parallel, delayed
 from typing import Dict, Callable, Any, List, Tuple
 from numpy.typing import NDArray
@@ -118,7 +117,7 @@ def election_sample(
 
 def samples(
     s : int,
-    generator : List[Callable], 
+    generator : Callable, 
     elections_dict : Dict[Callable, Dict[str, Any]],
     generator_input : List[Dict[str, Any]],
     k : int,
@@ -131,7 +130,7 @@ def samples(
 
     Args:
         s (int): Number of samples.
-        generator (list[Spatial]): List of spatial objects for creating random preference profiles.
+        generator (Spatial): Spatial object for creating random preference profiles.
         elections_dict (dict[Callable Election, dict[str, Any]]): Election mechanism dictionary 
             where keys are election mechanisms and their values are dictionaries with any additional
             keyword arguments.
@@ -224,7 +223,7 @@ def sample_task(generator, elections_dict, gen_input, k):
 
 def parallel_samples(
     s : int,
-    generator : List[Callable], 
+    generator : Callable, 
     elections_dict : Dict[Callable, Dict[str, Any]],
     generator_input : List[Dict[str, Any]],
     k : int,
@@ -239,7 +238,8 @@ def parallel_samples(
 
     Args:
         s (int): Number of samples.
-        generator (list[Spatial]): List of spatial objects for creating random preference profiles.
+        generator_list (Spatial): List of spatial objects for creating 
+            random preference profiles.
         elections_dict (dict[Callable Election, dict[str, Any]]): Election mechanism dictionary 
             where keys are election mechanisms and their values are dictionaries with any additional
             keyword arguments.
@@ -300,7 +300,7 @@ def parallel_samples(
         result_dict["voter_labels"] = [np.zeros((s, n), dtype = int)] * s
         result_dict["candidate_labels"] = [np.zeros((s, m), dtype = int)] * s
         
-        results = Parallel(n_jobs=cpu_count)(
+        results = Parallel(n_jobs=cpu_count, backend = 'threading')(
             delayed(sample_task)(generator, elections_dict, gen_input, k) for _ in range(s)
         )
          

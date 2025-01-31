@@ -44,9 +44,9 @@ elections_dict = {
     Bloc:{},
     Borda:{},
     STV:{'transfer_type' : 'weighted-fractional'},
-    #ChamberlinCourant:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_bloc/ten_thousand_voters/cc.log'},
+    ChamberlinCourant:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_bloc/ten_thousand_voters/cc.log'},
     GreedyCC:{},
-    #Monroe:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_bloc/ten_thousand_voters/monroe.log'},
+    Monroe:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_bloc/ten_thousand_voters/monroe.log'},
     GreedyMonroe:{}, 
     #PAV:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_bloc/ten_thousand_voters/pav.log'},
     PluralityVeto:{},
@@ -65,7 +65,7 @@ n_samples = 10000
 np.random.seed(918717)
 
 # and sample from them
-f = 'data/two_bloc/10k_voters_200_cands/samples.npz'
+f = 'data/two_bloc/10k_voters_200_cands/samples_full.npz'
 
 generator_input = [
     {'voter_group_sizes': group_sizes,
@@ -79,6 +79,6 @@ result_list = parallel_samples(
     generator_input,
     k,
     dim = 2,
-    cpu_count = 28,
+    cpu_count = 16,
     filename = f
 )
