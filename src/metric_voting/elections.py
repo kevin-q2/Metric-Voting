@@ -134,8 +134,11 @@ class CommitteeScoring(Election):
     
     Args:
         scoring_scheme (Callable[[int, int, int], float]): Scheme for candidate scoring. 
+            Function of the form f(m, k, i) where m is the total number of candidates,
+            k is the voter's ranking of the candidate, and
+            i is a voter's ranking in [1,...,m] of the candidate.
     """
-    def __init__(self,scoring_scheme: Callable[[int, int, int], float]):        
+    def __init__(self, scoring_scheme: Callable[[int, int, int], float]):        
         self.scoring_scheme = scoring_scheme
         
     def elect(self, profile : NDArray, k : int) -> NDArray: 
@@ -170,7 +173,9 @@ class CommitteeScoring(Election):
 class Bloc(CommitteeScoring):
     """
     Bloc approval election method. This is a committee scoring method
-    which uses the scoring scheme f(m, k, i) = 1 for i <= k and 0 otherwise.
+    which uses the scoring scheme f(m, k, i) = 1 for i <= k and 0 otherwise. In other words, 
+    all candidates in the top k positions of a voter's ranking receive a score of 1, and all
+    other candidates receive a score of 0.
     """
     def __init__(self):
         scoring_scheme = lambda x, y, z: 1 if z <= y else 0
@@ -183,7 +188,8 @@ class Bloc(CommitteeScoring):
 class Borda(CommitteeScoring):
     """
     Elect k candidates with the Borda Scoring Mechanism. This is a committee scoring method 
-    which uses the scoring scheme f(m, k, i) = m - i.
+    which uses the scoring scheme f(m, k, i) = m - (i + 1). In other words, candidates receive 
+    scores of m - 1 for being ranked first, m - 2 for being ranked second, and so on.
     """
     def __init__(self):        
         scoring_scheme = lambda x, y, z: x - z
@@ -223,7 +229,7 @@ class STV(Election):
         droop (int): Droop quota.
         elected_mask (NDArray): Tracks elected candidates.
         eliminated_mask (NDArray): Tracks eliminated candidates.
-        voter_indices (NDArray): Tracks voter's next available choices.
+        voter_current_ballot_position (NDArray): Tracks voter's next available choices.
         voter_weights (NDArray): Weights for each voter's votes.
         elected_count (int): Number of candidates currently elected.
         eliminated_count (int): Number of candidates currently eliminated.
@@ -250,7 +256,7 @@ class STV(Election):
         self.droop = None
         self.elected_mask = None
         self.eliminated_mask = None
-        self.voter_indices = None
+        self.voter_current_ballot_position = None
         self.voter_weights = None
         self.elected_count = None
         self.eliminated_count = None
@@ -279,7 +285,7 @@ class STV(Election):
         self.droop = int((self.n / (self.k + 1))) + 1
         self.elected_mask = np.zeros(self.m)
         self.eliminated_mask = np.zeros(self.m)
-        self.voter_indices = np.zeros(self.n, dtype=int)
+        self.voter_current_ballot_position = np.zeros(self.n, dtype=int)
         self.voter_weights = np.ones(self.n, dtype=np.float64)
         self.elected_count = 0
         self.eliminated_count = 0
@@ -297,7 +303,7 @@ class STV(Election):
             if self.verbose:
                 print("Round: " + str(self.elected_count + self.eliminated_count))
                 print("voter weights: " + str(self.voter_weights))
-                print("voter indices: " + str(self.voter_indices))
+                print("voter indices: " + str(self.voter_current_ballot_position))
                 print("scores: " + str(candidate_scores))
                 print("sum of scores: " + str(np.sum(candidate_scores)))
                 print("sum of weights: " + str(np.sum(self.voter_weights)))
@@ -347,8 +353,8 @@ class STV(Election):
         candidate_scores = np.zeros(self.m, dtype = np.float64)
         candidate_voters = {c: [] for c in range(self.m)}
         for i in range(self.n):
-            if self.voter_indices[i] != -1:
-                voter_choice = self.profile[self.voter_indices[i], i]
+            if self.voter_current_ballot_position[i] != -1:
+                voter_choice = self.profile[self.voter_current_ballot_position[i], i]
                 
                 if self.voter_weights[i] > 0:
                     #candidate_scores[voter_choice] += self.voter_weights[i]
@@ -357,6 +363,7 @@ class STV(Election):
         for c, voters in candidate_voters.items():
             candidate_scores[c] = np.sum(self.voter_weights[voters])
             
+        # Finds cands that satisfy the droop quota that are not elected or eliminated.
         satisfies_quota = np.where(
         (geq_with_tol(candidate_scores, self.droop, tol = 1e-10)) & 
         (self.elected_mask != 1) & 
@@ -417,16 +424,23 @@ class STV(Election):
         from any further voting process. 
         
         Args:
-            votes (float): Number of votes to transfer.
-            candidate_voters (List[int]): List of voter indices for 
-                voters who voted for the candidate to transfer from.
+            total_votes (float): Total number of votes for the candidate.
+            candidate_voters (List[int]): List of indices for voters
+                who voted for the elected candidate.
         """
         surplus_votes = total_votes - self.droop
         
         if self.verbose:
             print("surplus: " + str(surplus_votes))
         
-        if geq_with_tol(surplus_votes, 0, tol = 1e-10):
+        # This is done with tolerance to account for floating point issues,
+        # which are a result of fractional surplus votes. 
+        if surplus_votes > 1e-10:
+            
+            # We adjust the weight of the voters whose top remaining choice
+            # was the elected candidate so that their next candidate gets 
+            # votes equal to some fraction of their initial weight,
+            # where the fraction depends on a function of the surplus votes.
             if self.transfer_type == 'fractional':
                 self.voter_weights[candidate_voters] = np.maximum(
                     (surplus_votes / len(candidate_voters)),
@@ -451,11 +465,12 @@ class STV(Election):
             else:
                 raise ValueError("Invalid transfer type.")
             
+        # Once the weights have been adjusted, we move the voters'
+        # ballot positions to complete the transfer.
+        self.adjust_current_ballot_positions(candidate_voters)
         
-        self.adjust_indices(candidate_voters)
         
-        
-    def adjust_indices(self, candidate_voters : List[int]):
+    def adjust_current_ballot_positions(self, candidate_voters : List[int]):
         """
         Adjust voter indices to the next available candidate on their ballot.
         If a voter's ballot has been exhausted, remove them from any further
@@ -466,15 +481,15 @@ class STV(Election):
                 voters who voted for the candidate to transfer from.
         """
         for v in candidate_voters:
-            while self.voter_indices[v] != -1 and (
-                (self.elected_mask[self.profile[self.voter_indices[v], v]] == 1)
-                or (self.eliminated_mask[self.profile[self.voter_indices[v], v]] == 1)
+            while self.voter_current_ballot_position[v] != -1 and (
+                (self.elected_mask[self.profile[self.voter_current_ballot_position[v], v]] == 1)
+                or (self.eliminated_mask[self.profile[self.voter_current_ballot_position[v], v]] == 1)
             ):
-                self.voter_indices[v] += 1
+                self.voter_current_ballot_position[v] += 1
 
                 # ballot fully exhausted
-                if self.voter_indices[v] >= self.m:
-                    self.voter_indices[v] = -1
+                if self.voter_current_ballot_position[v] >= self.m:
+                    self.voter_current_ballot_position[v] = -1
                     break
  
 
@@ -1269,8 +1284,8 @@ class DMRD(Election):
         for candidates who have already been elected.
         """
         for i in range(self.n):
-            while self.elected_mask[self.profile[self.voter_indices[i], i]] == 1:
-                self.voter_indices[i] += 1
+            while self.elected_mask[self.profile[self.voter_current_ballot_position[i], i]] == 1:
+                self.voter_current_ballot_position[i] += 1
         
     def elect(self, profile : NDArray, k : int) -> NDArray:
         """
@@ -1286,19 +1301,19 @@ class DMRD(Election):
         self._approve_profile(profile, k)
         self.m, self.n = profile.shape
         self.profile = profile
-        self.voter_indices = np.zeros(self.n, dtype=int)
+        self.voter_current_ballot_position = np.zeros(self.n, dtype=int)
         self.elected_mask = np.zeros(self.m, dtype=bool)
         elected = np.zeros(k, dtype=int) - 1
         voter_probability = np.ones(self.n) / self.n
 
         for i in range(k):
             dictator = np.random.choice(range(self.n), p=voter_probability)
-            winner = self.profile[self.voter_indices[dictator], dictator]
+            winner = self.profile[self.voter_current_ballot_position[dictator], dictator]
             elected[i] = winner
             self.elected_mask[winner] = True
 
             # Find who voted for the winner
-            first_choice_votes = self.profile[self.voter_indices, np.arange(self.n)]
+            first_choice_votes = self.profile[self.voter_current_ballot_position, np.arange(self.n)]
             support = first_choice_votes == winner
             others = ~support
             
