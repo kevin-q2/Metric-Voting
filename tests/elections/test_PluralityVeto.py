@@ -69,10 +69,11 @@ def test_tie_break():
     
 def test_agreement_profile(agreement_profile):
     E = PluralityVeto()
-    assert set(E.elect(agreement_profile, 1).tolist()) == set([0])
-    assert set(E.elect(agreement_profile, 2).tolist()) == set([0,1])
-    assert set(E.elect(agreement_profile, 3).tolist()) == set([0,1,2])
-    assert set(E.elect(agreement_profile, 4).tolist()) == set([0,1,2,3])
+    for _ in range(10):
+        assert set(E.elect(agreement_profile, 1).tolist()) == set([0])
+        assert set(E.elect(agreement_profile, 2).tolist()) == set([0,1])
+        assert set(E.elect(agreement_profile, 3).tolist()) == set([0,1,2])
+        assert set(E.elect(agreement_profile, 4).tolist()) == set([0,1,2,3])
     
 def test_permutation_profile(permutation_profile):
     E = PluralityVeto()    

@@ -7,7 +7,7 @@ def test_update_indices(simple_multiwinner_rd_profile):
     E.n = 6
     E.profile = simple_multiwinner_rd_profile
     E.elected_mask = np.array([True, True, False])
-    E.voter_indices = np.array([0, 0, 0, 0, 0, 0])
+    E.voter_current_ballot_position = np.array([0, 0, 0, 0, 0, 0])
     E.update_indices()
     
     assert np.allclose(E.voter_indices, [2, 1, 2, 1, 0, 0])

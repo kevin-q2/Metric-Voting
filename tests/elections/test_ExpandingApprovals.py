@@ -46,16 +46,7 @@ def test_tie_break(expanding_fp_tie_profile):
     assert len(counts) == 2
     assert np.allclose(counts[0]/samples, 0.5, atol = 0.05, rtol = 0)
     assert np.allclose(counts[1]/samples, 0.5, atol = 0.05, rtol = 0)
-    
-'''
-NOTE: This does not work because of randomized ordering.
-def test_agreement_profile(agreement_profile):
-    E = ExpandingApprovals()
-    assert set(E.elect(agreement_profile, 1).tolist()) == set([0])
-    assert set(E.elect(agreement_profile, 2).tolist()) == set([0,1])
-    assert set(E.elect(agreement_profile, 3).tolist()) == set([0,1,2])
-    assert set(E.elect(agreement_profile, 4).tolist()) == set([0,1,2,3])
-'''
+
  
 def test_permutation_profile(permutation_profile):
     E = ExpandingApprovals()    

@@ -435,7 +435,7 @@ class STV(Election):
         
         # This is done with tolerance to account for floating point issues,
         # which are a result of fractional surplus votes. 
-        if surplus_votes > 1e-10:
+        if surplus_votes >= -1e-10:
             
             # We adjust the weight of the voters whose top remaining choice
             # was the elected candidate so that their next candidate gets 
@@ -1278,7 +1278,7 @@ class DMRD(Election):
     def __init__(self, rho : int = 1):
         self.rho = rho
         
-    def update_indices(self):
+    def update_current_ballot_positions(self):
         """
         Updates the first place vote indices of voters in the preference profile, to account 
         for candidates who have already been elected.
@@ -1327,7 +1327,7 @@ class DMRD(Election):
                 #voter_probability /= np.sum(voter_probability)
 
             # Effectively removes winning candidate from profile
-            self.update_indices()
+            self.update_current_ballot_positions()
 
         return elected
 
