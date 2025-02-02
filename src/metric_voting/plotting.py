@@ -18,6 +18,8 @@ from metric_voting.measurements import *
 def plot_winner_distribution(
     results : Dict[str, NDArray],
     fig_params : Dict[str, Any],
+    xlim : List[float],
+    ylim : List[float],
     colors : List[str],
     sample_fraction : float = 0.01,
     random_seed : int = None,
@@ -40,6 +42,10 @@ def plot_winner_distribution(
             (key, value) pairs as (election name, subset of the candidate array) plot.
             
         fig_params (dict[str, Any]): Dictionary with figure parameters.    
+        
+        xlim (list[float]): List of two floats specifying the x-axis limits for the plot.
+        
+        ylim (list[float]): List of two floats specifying the y-axis limits for the plot.
             
         colors (list[str]): Length 3 list of colors to use for voters, candidates, 
             and winners respectively. Colors should be specified in hex format. 
@@ -82,6 +88,7 @@ def plot_winner_distribution(
     candidate_stack_sample = candidate_stack.sample(frac=sample_fraction, random_state=random_seed)
 
     # Set x and y limits for scatter and example plots:
+    '''
     epsilon = 0.5
     ymin = np.min((voter_stack.loc[:,'y'].min(), candidate_stack.loc[:,'y'].min()))
     ymax = np.max((voter_stack.loc[:,'y'].max(), candidate_stack.loc[:,'y'].max()))
@@ -97,12 +104,15 @@ def plot_winner_distribution(
     example_ylim = [ymin - epsilon,ymax + epsilon]
     example_xlim = [-3 - epsilon,3 + epsilon]
     example_ylim = [-3 - epsilon, 3 + epsilon]
+    '''
     
     # Plot the voter and candidate KDE distributions:
     sns.kdeplot(data=voter_stack_sample, x='x', y='y', color = voter_color, fill=False,
                 thresh=0.1, levels=10, alpha = 1, ax = axes[0][0])
     sns.kdeplot(data=candidate_stack_sample, x='x', y='y', color = candidate_color, fill=False,
                 thresh=0.1, levels=10, alpha = 0.9, ax = axes[0][0])
+    axes[0][0].set_xlim(xlim)
+    axes[0][0].set_ylim(ylim)
     axes[0][0].set_title('KDE')
     axes[0][0].set_ylabel('')
     axes[0][0].set_xlabel('')
@@ -111,9 +121,9 @@ def plot_winner_distribution(
     axes[0][1].scatter(voter_stack_sample.iloc[:,0], voter_stack_sample.iloc[:,1],
                     facecolors = voter_color, edgecolors = 'none', alpha = 0.3, s = 5)
     axes[0][1].scatter(candidate_stack_sample.iloc[:,0], candidate_stack_sample.iloc[:,1],
-                    facecolors = candidate_color, edgecolors = 'none', alpha = 0.01, s = 5)
-    axes[0][1].set_xlim(scatter_xlim)
-    axes[0][1].set_ylim(scatter_ylim)
+                    facecolors = candidate_color, edgecolors = 'none', alpha = 0.2, s = 5)
+    axes[0][1].set_xlim(xlim)
+    axes[0][1].set_ylim(ylim)
     axes[0][1].set_title('Scatter')
 
     # Plot an example voter, candidate setting.
@@ -121,8 +131,8 @@ def plot_winner_distribution(
                     facecolors = voter_color, edgecolors = 'none', alpha = 0.9, s = 30)
     axes[0][2].scatter(candidate_example[:,0], candidate_example[:,1],
                     facecolors = candidate_color, edgecolors = 'none', alpha = 0.9, s = 30)
-    axes[0][2].set_xlim(example_xlim)
-    axes[0][2].set_ylim(example_ylim)
+    axes[0][2].set_xlim(xlim)
+    axes[0][2].set_ylim(ylim)
     axes[0][2].set_title('Example')
 
     # Plot the winner distributions for each election method:
@@ -159,16 +169,16 @@ def plot_winner_distribution(
                     facecolors = voter_color, edgecolors = 'none', alpha = 0.3, s = 5)
         axes[ax_idx][1].scatter(winner_stack_sample.iloc[:,0], winner_stack_sample.iloc[:,1],
                         facecolors = winner_color, edgecolors = 'none', alpha = 0.1, s = 5)
-        axes[ax_idx][1].set_xlim(scatter_xlim)
-        axes[ax_idx][1].set_ylim(scatter_ylim)
+        axes[ax_idx][1].set_xlim(xlim)
+        axes[ax_idx][1].set_ylim(ylim)
 
         # Plot the example:
         axes[ax_idx][2].scatter(voter_example[:,0], voter_example[:,1],
                         facecolors = voter_color, edgecolors = 'none', alpha = 0.9, s = 30)
         axes[ax_idx][2].scatter(winner_example[:,0], winner_example[:,1],
                         facecolors = winner_color, edgecolors = 'none', alpha = 0.9, s = 30)
-        axes[ax_idx][2].set_xlim(example_xlim)
-        axes[ax_idx][2].set_ylim(example_ylim)
+        axes[ax_idx][2].set_xlim(xlim)
+        axes[ax_idx][2].set_ylim(ylim)
         
 
     legend_elements = [
@@ -273,11 +283,11 @@ def plot_ineff_example(
             axes[j][i].scatter(voter_pos[bloc,0], voter_pos[bloc,1],
                         facecolors = bloc_color, edgecolors = 'none', alpha = 0.9, s = 20)
             axes[j][i].scatter(candidate_pos[other_candidates,0], candidate_pos[other_candidates,1],
-                        facecolors = candidate_color, edgecolors = 'black', alpha = 0.9, s = 30)
+                        facecolors = candidate_color, edgecolors = 'black', alpha = 0.9, s = 50)
             axes[j][i].scatter(candidate_pos[other_winners,0], candidate_pos[other_winners,1],
-                            facecolors = winner_color, edgecolors = 'black', alpha = 0.9, s = 40)
+                            facecolors = winner_color, edgecolors = 'black', alpha = 1, s = 70)
             axes[j][i].scatter(candidate_pos[reps,0], candidate_pos[reps,1],
-                        facecolors = reps_color, edgecolors = 'black', alpha = 0.9, s = 50, 
+                        facecolors = reps_color, edgecolors = 'black', alpha = 1, s = 100, 
                         marker = '^')
             axes[j][i].set_xlim(xlim)
             axes[j][i].set_ylim(ylim)

@@ -18,7 +18,7 @@ colors = ["#0099cd","#ffca5d","#00cd99","#99cd00","#cd0099","#9900cd","#8dd3c7",
         "#D81B60","#26A69A","#FFEA00","#6200EA",
     ]
 
-colors = colors[:6] + colors[-12::2]
+#colors = colors[:6] + colors[-12::2]
 
 plt.rcParams.update({
     "pgf.texsystem": "pdflatex",
@@ -30,7 +30,7 @@ plt.rcParams.update({
 })
 
 input_file = 'data/two_bloc/thousand_voters/samples.npz'
-output_file = 'figures/two_bloc/thousand_voters/distribution.png'
+output_file = 'figures/two_bloc/thousand_voters/distribution2.png'
 
 loaded_data = np.load(input_file)
 result_dict = {key: loaded_data[key] for key in loaded_data.files}
@@ -40,8 +40,10 @@ n_samples = result_dict['voters'].shape[0]
 plot_winner_distribution(
     results = result_dict,
     fig_params = {'figsize' : (10, 24), 'dpi' : 200},
-    colors = [colors[0], colors[-2], colors[5]],
-    sample_fraction = 0.25,
+    xlim = [-4,4],
+    ylim = [-4,4],
+    colors = [colors[0], colors[10], colors[4]],
+    sample_fraction = 0.1,
     random_seed = 42,
     output_file = output_file
 )

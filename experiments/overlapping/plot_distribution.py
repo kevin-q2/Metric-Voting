@@ -30,7 +30,7 @@ plt.rcParams.update({
 })
 
 input_file = 'data/overlapping/samples.npz'
-output_file = 'figures/overlapping/distribution.png'
+output_file = 'figures/overlapping/distribution2.png'
 
 loaded_data = np.load(input_file)
 result_dict = {key: loaded_data[key] for key in loaded_data.files}
@@ -40,8 +40,10 @@ n_samples = result_dict['voters'].shape[0]
 plot_winner_distribution(
     results = result_dict,
     fig_params = {'figsize' : (10, 24), 'dpi' : 200},
-    colors = [colors[0], colors[-2], colors[5]],
-    sample_fraction = 0.25,
+    xlim = [-5,5],
+    ylim = [-5,5],
+    colors = [colors[0], colors[10], colors[4]],
+    sample_fraction = 0.1,
     random_seed = 42,
     output_file = output_file
 )
