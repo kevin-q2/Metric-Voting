@@ -329,7 +329,7 @@ def parallel_samples(
         result_dict["candidate_labels"] = [np.zeros((s, m), dtype = int)] * s
         
         # Generate input samples for all s samples.
-        input_sample_list = [{}]*s
+        input_sample_list = []
         for i in range(s):
             (prof,
              cand_pos,
@@ -338,9 +338,11 @@ def parallel_samples(
              v_labels
              ) = generate_election_input(generator, gen_input)
             
-            input_sample_list[i]['profile'] = prof
-            input_sample_list[i]['candidate_positions'] = cand_pos
-            input_sample_list[i]['voter_positions'] = voter_pos
+            input_dict = {}
+            input_dict['profile'] = prof
+            input_dict['candidate_positions'] = cand_pos
+            input_dict['voter_positions'] = voter_pos
+            input_sample_list.append(input_dict)
 
             
             result_dict["candidates"][i] = cand_pos
@@ -350,8 +352,8 @@ def parallel_samples(
         
         # Then run elections in parallel.
         parallel_results = Parallel(n_jobs=cpu_count, backend = 'loky')(
-            delayed(election_sample)(**input_sample_list[i], elections_dict = elections_dict, k = k)
-            for i in range(s)
+            delayed(election_sample)(**input_sample, elections_dict = elections_dict, k = k)
+            for input_sample in input_sample_list
         )
          
         for i, winner_dict in enumerate(parallel_results):               
