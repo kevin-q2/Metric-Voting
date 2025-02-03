@@ -121,7 +121,7 @@ def plot_winner_distribution(
     axes[0][1].scatter(voter_stack_sample.iloc[:,0], voter_stack_sample.iloc[:,1],
                     facecolors = voter_color, edgecolors = 'none', alpha = 0.3, s = 5)
     axes[0][1].scatter(candidate_stack_sample.iloc[:,0], candidate_stack_sample.iloc[:,1],
-                    facecolors = candidate_color, edgecolors = 'none', alpha = 0.2, s = 5)
+                    facecolors = candidate_color, edgecolors = 'none', alpha = 0.05, s = 5)
     axes[0][1].set_xlim(xlim)
     axes[0][1].set_ylim(ylim)
     axes[0][1].set_title('Scatter')

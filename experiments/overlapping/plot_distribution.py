@@ -18,7 +18,7 @@ colors = ["#0099cd","#ffca5d","#00cd99","#99cd00","#cd0099","#9900cd","#8dd3c7",
         "#D81B60","#26A69A","#FFEA00","#6200EA",
     ]
 
-colors = colors[:6] + colors[-12::2]
+#colors = colors[:6] + colors[-12::2]
 
 plt.rcParams.update({
     "pgf.texsystem": "pdflatex",
@@ -43,7 +43,7 @@ plot_winner_distribution(
     xlim = [-5,5],
     ylim = [-5,5],
     colors = [colors[0], colors[10], colors[4]],
-    sample_fraction = 0.1,
+    sample_fraction = 0.25,
     random_seed = 42,
     output_file = output_file
 )

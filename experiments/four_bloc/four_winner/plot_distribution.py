@@ -43,7 +43,7 @@ plot_winner_distribution(
     colors = [colors[0], colors[10], colors[4]],
     xlim = [-4,4],
     ylim = [-4,4],
-    sample_fraction = 0.1,
+    sample_fraction = 0.25,
     random_seed = 42,
     output_file = output_file
 )
