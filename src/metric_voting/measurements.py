@@ -314,7 +314,7 @@ def random_group_inefficiency(
         weights (np.ndarray, optional): Voter probabilities of selection. Defaults to None, 
             in which case a greedy heuristic is used. 
     """
-    _, n = cost_arr.shape
+    m, n = cost_arr.shape
     k = len(winner_indices)
     
     if weights is None:
@@ -329,8 +329,9 @@ def random_group_inefficiency(
         )
 
         # Greedy estimate / inefficiency heuristic for voters
-        greedy_scores = (winner_set_cost_arr / candidate_set_cost_arr)
-        greedy_scores = np.nan_to_num(greedy_scores, nan=0.0)
+        greedy_scores = np.array([winner_set_cost_arr[i]/candidate_set_cost_arr[i] 
+                                  if candidate_set_cost_arr[i] != 0 else 0
+                                  for i in range(n)])
         weights = greedy_scores / np.sum(greedy_scores)
     
     random_bloc = random_voter_bloc(n, k, t = t, weights = weights)

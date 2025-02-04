@@ -1,8 +1,8 @@
 import numpy as np
 from numpy.typing import NDArray
-from typing import Callable, Dict, Tuple, Any, List, Optional, Union
+from typing import Callable, Dict, Tuple, List
 import pulp
-from .utils import tiebreak, remove_candidates, borda_matrix, geq_with_tol
+from .utils import tiebreak, borda_matrix, geq_with_tol
 
 
 ####################################################################################################
@@ -970,6 +970,7 @@ class GreedyMonroe(Election):
 
         is_elected = np.zeros(m, dtype=bool)
         voter_assign_mask = np.zeros(n, dtype=bool)
+        voter_assign_idx = np.zeros(n, dtype = int) - 1
 
         for _ in range(k):
             scores = np.zeros(m)
@@ -987,6 +988,11 @@ class GreedyMonroe(Election):
             available_voters = np.where(~voter_assign_mask)[0]
             max_cand_voters = tiebreak(B[max_cand, ~voter_assign_mask])[::-1][:size]
             voter_assign_mask[available_voters[max_cand_voters]] = True
+            voter_assign_idx[available_voters[max_cand_voters]] = max_cand
+        
+        assign_scores = [B[assign_idx,i] if assign_idx != -1 else 0 
+                         for i,assign_idx in enumerate(voter_assign_idx)]
+        self.objective = np.sum(assign_scores)
         return np.where(is_elected)[0]
 
 

@@ -133,6 +133,10 @@ def test_remove_candidates():
     
     assert np.array_equal(remove_candidates(profile, [2]), new_profile)
     
+    # Remove candidates that are not there
+    assert np.array_equal(remove_candidates(profile, [4,6,92]), profile)
+    
+    
     
 def test_uniform_profile():
     m = 2

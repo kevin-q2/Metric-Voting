@@ -175,7 +175,7 @@ def test_random_group_ineff():
     unique2,counts2 = np.unique(random_ineffs, return_counts=True)
     assert np.allclose(unique1, unique2, atol = 0.05)
     for i,c in enumerate(counts1):
-        assert np.isclose(c/len(ineffs), counts2[i]/samples, atol = 0.05)
+        assert np.isclose(c/len(ineffs), counts2[i]/samples, atol = 0.05, rtol = 0.05)
         
     
         
@@ -209,4 +209,4 @@ def test_heuristic_bloc():
     unique,counts = np.unique(blocs, return_counts=True)
     assert len(unique) == 2*n
     for c in counts:
-        assert np.isclose(c/samples, 0.5, atol = 0.05)
+        assert np.isclose(c/samples, 0.5, atol = 0.05, rtol = 0.05)

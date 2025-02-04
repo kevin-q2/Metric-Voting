@@ -139,9 +139,14 @@ def random_voter_bloc(n : int, k : int, t : int, weights : NDArray) -> NDArray:
     Returns:
         random_bloc (np.ndarray): Randomly selected bloc of voters.
     """
+    n_weights = np.sum(weights > 0)
+    if n_weights < t:
+        raise ValueError("Fewer non-zero weights than representatives.")
+    
     if t != k:
         min_size = math.ceil(n * t / k)
         max_size = min(math.ceil(n * (t + 1) / k) - 1, n)
+        max_size = min(max_size, n_weights)
         bloc_size = np.random.randint(min_size, max_size + 1)
         random_bloc = np.random.choice(n, bloc_size, replace=False, p = weights)
     else:

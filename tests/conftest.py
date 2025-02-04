@@ -169,16 +169,7 @@ def monroe_vs_chamberlin_profile():
        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
     ])
 
-'''
-@pytest.fixture
-def plurality_veto_elim_profile():
-   return np.array([
-      [1,2,3,1,3,3],
-      [0,0,0,0,0,0],
-      [3,1,2,3,2,1],
-      [2,3,1,2,1,2]
-   ])
-'''
+
 @pytest.fixture
 def plurality_veto_elim_profile():
    return np.array([
@@ -223,4 +214,14 @@ def two_winner_rd_profile():
       [0,0,0,0,0,0,0,0,0,0],
       [1,1,1,1,1,2,2,2,2,2],
       [2,2,2,2,2,1,1,1,1,1]
+   ])
+   
+   
+@pytest.fixture
+def polarized_profile():
+   return np.array([
+      [0,0,0,0,0,2,2,2,2,2],
+      [1,1,1,1,1,3,3,3,3,3],
+      [2,2,2,2,2,0,0,0,0,0],
+      [3,3,3,3,3,1,1,1,1,1]
    ])

@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 from .measurements import cost_array
 from .utils import euclidean_distance, cost_array_to_ranking, tiebreak
 from numpy.typing import NDArray
@@ -525,6 +526,9 @@ class ProbabilisticGroupSpatial(GroupSpatial):
 
 class RankedSpatial:
     """
+    NOTE: This class/method of spatial generation is still a work in progress. It has not 
+    been thorougly tested yet! I hope to get to this soon!
+    
     Given a ranked preference profile and a set of candidate positions, 
     generates a set of voter positions that are consistent with each voters ranking.
     
@@ -554,6 +558,8 @@ class RankedSpatial:
         voter_dist_fn_params: Dict[str, Any] = None,
         distance_fn: Callable =euclidean_distance
     ):
+        # See note above.
+        warnings.warn("This spatial generation method has not been thoroughly tested.")
         
         self.voter_dist_fn = voter_dist_fn
 

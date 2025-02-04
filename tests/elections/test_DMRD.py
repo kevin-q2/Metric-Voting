@@ -3,14 +3,14 @@ from metric_voting import DMRD
 from metric_voting import uniform_profile
 
 def test_update_indices(simple_multiwinner_rd_profile):
-    E = DMRD()
-    E.n = 6
-    E.profile = simple_multiwinner_rd_profile
-    E.elected_mask = np.array([True, True, False])
-    E.voter_current_ballot_position = np.array([0, 0, 0, 0, 0, 0])
-    E.update_indices()
+    election = DMRD()
+    election.n = 6
+    election.profile = simple_multiwinner_rd_profile
+    election.elected_mask = np.array([True, True, False])
+    election.voter_current_ballot_position = np.array([0, 0, 0, 0, 0, 0])
+    election.update_current_ballot_positions()
     
-    assert np.allclose(E.voter_indices, [2, 1, 2, 1, 0, 0])
+    assert np.allclose(election.voter_indices, [2, 1, 2, 1, 0, 0])
     
 
 def test_single_winner(expanding_fp_tie_profile):
@@ -95,7 +95,7 @@ def test_all_unique():
     n = 100
     m = 20
     k = 5
-    E = DMRD(rho = 1/2)
+    election = DMRD(rho = 1/2)
     for _ in range(100):
         profile = uniform_profile(n, m)
-        assert len(set(E.elect(profile, k))) == k
+        assert len(set(election.elect(profile, k))) == k

@@ -65,8 +65,8 @@ def test_all_unique():
     n = 100
     m = 20
     k = 5
-    E = SMRD()
+    election = SMRD()
     for _ in range(100):
         profile = uniform_profile(n, m)
-        assert len(set(E.elect(profile, k))) == k
+        assert len(set(election.elect(profile, k))) == k
     

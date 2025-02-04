@@ -4,7 +4,7 @@ from metric_voting import uniform_profile
 
 
 def test_candidate_elect():
-    E = ExpandingApprovals()
+    election = ExpandingApprovals()
     n,m,k = 200, 100, 20
     quota = int(np.ceil(n/k))
     neighborhood = np.zeros((m, n))
@@ -15,31 +15,31 @@ def test_candidate_elect():
     for i, e in enumerate(random_elects):
         neighborhood[e, i*quota : (i + 1)*quota] = 1
         
-    E.neighborhood = neighborhood
-    E.uncovered_mask = uncovered_mask
-    E.elected_mask = elected_mask
-    E.quota = quota
+    election.neighborhood = neighborhood
+    election.uncovered_mask = uncovered_mask
+    election.elected_mask = elected_mask
+    election.quota = quota
     for e in random_elects:
-        E.candidate_check_elect(e)
+        election.candidate_check_elect(e)
     
-    assert set(np.where(E.elected_mask == 1)[0]) == set(random_elects)
+    assert set(np.where(election.elected_mask == 1)[0]) == set(random_elects)
 
 
 def test_num_winners():
-    E = ExpandingApprovals()
+    election = ExpandingApprovals()
     for _ in range(100):
         profile = uniform_profile(200, 10)
         rand_k = np.random.randint(1, 10 + 1)
-        assert len(E.elect(profile, rand_k)) == rand_k
+        assert len(election.elect(profile, rand_k)) == rand_k
         
         
 def test_tie_break(expanding_fp_tie_profile):
-    E = ExpandingApprovals()
+    election = ExpandingApprovals()
     
     samples = 1000
     winners = np.zeros(samples, dtype = int)
     for i in range(samples):
-        winner = E.elect(expanding_fp_tie_profile, 1)
+        winner = election.elect(expanding_fp_tie_profile, 1)
         winners[i] = winner[0]
         
     _, counts = np.unique(winners, return_counts=True)
@@ -49,17 +49,18 @@ def test_tie_break(expanding_fp_tie_profile):
 
  
 def test_permutation_profile(permutation_profile):
-    E = ExpandingApprovals()    
+    election = ExpandingApprovals()    
     samples = 1000
     winners = np.zeros(samples, dtype = int)
     for i in range(samples):
-        winner = E.elect(permutation_profile, 1)
+        winner = election.elect(permutation_profile, 1)
         winners[i] = winner[0]
         
     _, counts = np.unique(winners, return_counts = True)
     assert len(counts) == 4
-    assert np.allclose(counts[0]/samples, 0.25, atol = 0.1, rtol = 0)
-    assert np.allclose(counts[1]/samples, 0.25, atol = 0.1, rtol = 0)
-    assert np.allclose(counts[2]/samples, 0.25, atol = 0.1, rtol = 0)
-    assert np.allclose(counts[3]/samples, 0.25, atol = 0.1, rtol = 0)
+    assert np.allclose(counts[0]/samples, 0.25, atol = 0.05, rtol = 0)
+    assert np.allclose(counts[1]/samples, 0.25, atol = 0.05, rtol = 0)
+    assert np.allclose(counts[2]/samples, 0.25, atol = 0.05, rtol = 0)
+    assert np.allclose(counts[3]/samples, 0.25, atol = 0.05, rtol = 0)
+    
     
