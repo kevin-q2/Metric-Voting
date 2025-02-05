@@ -272,16 +272,23 @@ def plot_ineff_example(
         methods = [method for method in e_dict.keys() if method != 'winners']
         for j, method in enumerate(methods):
             method_results = e_dict[method]
-            # Group
-            bloc = np.where(method_results['labels'] == 1)[0]
-            other_voters = np.where(method_results['labels'] != 1)[0]
-            reps = np.where(method_results['reps'] == 1)[0]
+            
+            # The specific bloc to show results for should be given as input in the result dict.
+            bloc_label = method_results.get('bloc_label')
+            # If they aren't, the default label is 1
+            if bloc_label is None:
+                bloc_label = 1
+            
+            bloc = np.where(method_results['labels'] == bloc_label)[0]
+            other_voters = np.where(method_results['labels'] != bloc_label)[0]
+            reps = np.where(method_results['reps'] == True)[0]
             other_winners = np.array([w for w in np.where(winners)[0] if w not in reps], 
                                      dtype = np.int32)
+            
             axes[j][i].scatter(voter_pos[other_voters,0], voter_pos[other_voters,1],
                             facecolors = voter_color, edgecolors = 'none', alpha = 0.9, s = 20)
             axes[j][i].scatter(voter_pos[bloc,0], voter_pos[bloc,1],
-                        facecolors = bloc_color, edgecolors = 'none', alpha = 0.9, s = 20)
+                        facecolors = bloc_color, edgecolors = 'none', alpha = 1, s = 20)
             axes[j][i].scatter(candidate_pos[other_candidates,0], candidate_pos[other_candidates,1],
                         facecolors = candidate_color, edgecolors = 'black', alpha = 0.9, s = 50)
             axes[j][i].scatter(candidate_pos[other_winners,0], candidate_pos[other_winners,1],
