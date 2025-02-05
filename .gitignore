@@ -163,41 +163,19 @@ cython_debug/
 
 
 # Files
-data/*
-! data/four_bloc/4bloc_100voters.npz
-! data/two_bloc/2bloc_100voters.npz
-! data/scot-elex/*.npy
-*.sh
-*.txt
+data/
 
-batch/
-batch/four_party_sample_collect2.py
-batch/four_party_sample_collect3.py
-batch/two_party_sample_collect2.py
-batch/four_party_sample_collect4.py
-batch/two_party_sample_collect3.py
-batch/plot_violin2.py
-batch/plot_distribution2.py
+experiments/scottish_data/
+experiments/*/*.sh
+experiments/*/*.txt
+experiments/*/*.log
 
-data/2bloc_10k.npz
-data/2bloc_separated.npz
-data/4bloc_10k.npz
-data/4bloc_5cand.npz
-data/4bloc_10k_5cand.npz
-data/square.npz
-data/disc.npz
-data/gaussian.npz
-data/four_gaussian.npz
 
 examples/stv_tiebreak.py
 examples/2bloc.ipynb
 examples/grid.ipynb
 examples/worst_bloc.ipynb
-
-
-experiments/*/*.sh
-experiments/*/*.txt
-experiments/*/*.log
+examples/older_experiments.ipynb
 
 .envrc
 .python-version
