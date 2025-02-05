@@ -1,43 +1,57 @@
 # Metric Voting
 
-A computational implementation of multi-winner social choice mechanisms in a metric setting. 
+A computational implementation of multi-winner social choice mechanisms in a metric space setting. 
 We assume that voters and candidates are embedded in some latent metric space and provide
-code for randomly generating voter and candidate positions given some input distributions. 
-We also implement many different election mechanisms and
+code for randomly generating voter and candidate positions given input distributions. 
+We also implement various multi-winner election mechanisms and
 provide tools for measuring voter representation in their output. 
 
-## Getting Started
-
-
 ## Social Choice Mechanisms Supported:
-We provide implementations of the following multi-winner election mechansisms, all 
-of which can be found in `elections.py`. For 
-more information and intellectual stimulation please refer to [1, 2]
+We provide implementations of the following multi-winner election mechansisms. For 
+detailed information and definitions please refer to [1, 2].
 
 1. SNTV (Plurality)
 2. Bloc
-3. STV
-4. Borda
+3. Borda
+4. STV
 5. Chamberlin Courant
-6. A greedy Chamberlin Courant Approximation
-7. Monroe
-8. Plurality Veto [3]
-9. Expanding Approvals [4, 5]
-10. Variations on multi-winner Random Dictator
+6. A greedy Chamberlin Courant approximation algorithm
+8. Monroe
+9. A greedy Monroe approximation algorithm
+10. Two multi-winner extensions of Plurality Veto [3]
+11. Expanding Approvals [4]
+12. Multiple ariations on multi-winner Random Dictator
+
+## Getting Started
+This repository is written in python and uses poetry to manage its dependencies.
+If you don't currently have poetry installed on your system instructions for downloading it 
+may be found [here](https://python-poetry.org/docs/). Once poetry has been installed, 
+you may download the required dependencies by simply running the following commands:
+
+```
+poetry install
+```
+Then to activate the virtual environment it creates:
+```
+poetry shell
+```
 
 ## Examples
-All examples for generating metric settings, performing elections, sampling, and visualizing results 
-can be found in `examples.ipynb`. Reading through this notebook will hopefully help 
-with learning how to interface with the spatial generation tools in `spatial_generation.py`, 
-the mechanisms in `elections.py`, the sampling procedure used in `election_sampling.py`, 
-and the measures of representation in `tools.py`.
-
+Examples for generating metric space settings, performing elections, computing measurements, 
+and visualizing results can be found within jupyter notebooks supplied in the `examples` folder.
+These show how to interface with the spatial generation tools in `spatial_generation.py`, 
+the mechanisms in `elections.py`,
+and the measures of representation in `measurements.py`.
 
 ## Experimentation
-We include collected samples from a few of our experiments in `data/`. All code for data collection,
-including for more intensive experiments which we omit from the data folder, can be found in the 
-`batch/` folder. Along with it, are a messy set of files that we used for plotting results for our 
-experiments (The KDE plots can take a while to run!). This is messy for now...I plan to clean things up. 
+All code used to run and collect data for our experiments may be found nested within the `experiments` folder. 
+Each specific experiment contains files:
+  1. `example_ineff.py` for running and collecting data on a single simple example setting.
+  2. `sample_collect.py` for sampling and recording results from generated elections.
+  3. `plot_distribution.py` for plotting KDE's visualizing the samples in metric space.
+
+These may be run to re-create our experimental results. Once they have been run, additional plotting may 
+be created within `examples/4-experiment-plotting.ipynb`.
 
 ## References
 [1] Faliszewski, Piotr, et al. "Multiwinner voting: A new challenge for social choice theory." Trends in computational social choice 74.2017 (2017): 27-47.
@@ -47,5 +61,3 @@ experiments (The KDE plots can take a while to run!). This is messy for now...I 
 [3] Kizilkaya, Fatih Erdem, and David Kempe. "Plurality veto: A simple voting rule achieving optimal metric distortion." arXiv preprint arXiv:2206.07098 (2022).
 
 [4] Kalayci, Yusuf, David Kempe, and Vikram Kher. "Proportional representation in metric spaces and low-distortion committee selection." Proceedings of the AAAI Conference on Artificial Intelligence. Vol. 38. No. 9. 2024.
-
-[5] Aziz, Haris, and Barton E. Lee. "The expanding approvals rule: improving proportional representation and monotonicity." Social Choice and Welfare 54.1 (2020): 1-45.
