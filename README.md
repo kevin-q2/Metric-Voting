@@ -1,4 +1,4 @@
-# Metric Voting
+# Metric Voting :ballot_box:
 
 A computational implementation of multi-winner social choice mechanisms in a metric space setting. 
 We assume that voters and candidates are embedded in some latent metric space and provide
