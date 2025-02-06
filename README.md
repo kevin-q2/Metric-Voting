@@ -5,6 +5,7 @@ We assume that voters and candidates are embedded in some latent metric space an
 code for randomly generating voter and candidate positions given input distributions. 
 We also implement various multi-winner election mechanisms and
 provide tools for measuring voter representation in their output. 
+Please see [VoteKit](https://github.com/mggg/VoteKit) as well, especially if metric assumptions aren't needed.
 
 ## Social Choice Mechanisms Supported:
 We provide implementations of the following multi-winner election mechansisms. For 
