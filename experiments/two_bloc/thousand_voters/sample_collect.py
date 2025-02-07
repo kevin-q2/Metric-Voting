@@ -1,6 +1,6 @@
 import numpy as np
 from metric_voting.spatial_generation import *
-from metric_voting.election_sampling import samples
+from metric_voting.election_sampling import samples, parallel_samples
 from metric_voting.elections import *
 
 
@@ -45,8 +45,10 @@ elections_dict = {
     Borda:{},
     STV:{'transfer_type' : 'weighted-fractional'},
     ChamberlinCourant:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_bloc/thousand_voters/cc.log'},
+    ChamberlinCourantTiebreak:{},
     GreedyCC:{},
     Monroe:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_bloc/thousand_voters/monroe.log'},
+    MonroeTiebreak:{},
     GreedyMonroe:{}, 
     #PAV:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_bloc/thousand_voters/pav.log'},
     PluralityVeto:{},
@@ -65,19 +67,20 @@ n_samples = 10000
 np.random.seed(918717)
 
 # and sample from them
-f = 'data/two_bloc/thousand_voters/samples.npz'
+f = 'data/two_bloc/thousand_voters/samples_tiebreak.npz'
 
 generator_input = [
     {'voter_group_sizes': group_sizes,
      'candidate_group_sizes': [m]}
 ]
 
-result_list = samples(
+result_list = parallel_samples(
     n_samples,
     generator,
     elections_dict,
     generator_input,
     k,
     dim = 2,
+    cpu_count = 8,
     filename = f
 )
