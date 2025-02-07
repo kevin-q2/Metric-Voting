@@ -175,6 +175,7 @@ examples/2bloc.ipynb
 examples/grid.ipynb
 examples/worst_bloc.ipynb
 examples/older_experiments.ipynb
+examples/CC_testing.ipynb
 
 .envrc
 .python-version

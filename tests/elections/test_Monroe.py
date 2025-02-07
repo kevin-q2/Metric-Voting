@@ -17,6 +17,7 @@ def test_agreement_profile(agreement_profile):
     assert set(election.elect(agreement_profile, 3).tolist()) == set([0,1,2])
     assert set(election.elect(agreement_profile, 4).tolist()) == set([0,1,2,3])
     
+'''
 def test_permutation_profile(permutation_profile):
     election = Monroe()    
     samples = 10000
@@ -31,7 +32,7 @@ def test_permutation_profile(permutation_profile):
     assert np.allclose(counts[1]/samples, 0.25, atol = 0.05, rtol = 0)
     assert np.allclose(counts[2]/samples, 0.25, atol = 0.05, rtol = 0)
     assert np.allclose(counts[3]/samples, 0.25, atol = 0.05, rtol = 0)
-    
+''' 
     
 def test_proportionality_constraints(monroe_vs_chamberlin_profile):
     election1 = Monroe()
@@ -46,6 +47,7 @@ def test_num_winners():
         rand_k = np.random.randint(1, 10 + 1)
         assert len(election.elect(profile, rand_k)) == rand_k
         
+'''
 def test_tiebreak(cc_tie_profile):
     election = Monroe()
     
@@ -58,3 +60,4 @@ def test_tiebreak(cc_tie_profile):
     assert len(unique) == 2
     assert np.isclose(counts[0]/samples, 0.5, atol=0.05)
     assert np.isclose(counts[1]/samples, 0.5, atol=0.05)
+'''

@@ -225,3 +225,30 @@ def polarized_profile():
       [2,2,2,2,2,0,0,0,0,0],
       [3,3,3,3,3,1,1,1,1,1]
    ])
+   
+
+@pytest.fixture
+def permutation_with_last1():
+   prof = np.array(list(permutations([0,1,2]))).T
+   prof = np.vstack((prof, np.zeros(6, dtype = int) + 3))
+   return prof
+
+@pytest.fixture
+def permutation_with_last2():
+   prof = np.array(list(permutations([0,1,2,3]))).T
+   prof = np.vstack((prof, np.zeros(24, dtype = int) + 4))
+   return prof
+
+@pytest.fixture
+def permutation_with_noise1():
+   prof = np.array(list(permutations([0,1,2,3]))).T
+   prof = np.array(list(permutations([0,1,2,3]))).T
+   prof[:,0] = [1,0,2,3]
+   return prof
+   
+@pytest.fixture
+def permutation_with_noise2():
+   prof = np.array(list(permutations([0,1,2,3]))).T
+   prof[:,0] = [1,0,2,3]
+   prof[:,-1] = [2,3,1,0]
+   return prof
