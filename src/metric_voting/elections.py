@@ -669,19 +669,14 @@ class ChamberlinCourantTiebreak(Election):
 
     
     Args:
-        solver (str, optional): Solver for the integer linear program. These are taken 
-            from PuLP's available solvers, for more information please see 
-            (https://coin-or.github.io/pulp/guides/how_to_configure_solvers.html).
-            
-            Some options 'PULP_CBC_CMD' and 'GUROBI_CMD' (requires licesnse).
-            Defaults to 'PULP_CBC_CMD', which uses PuLPs default coin and branch bound solver.
-            
-        log_path (str, optional): Path to log file for solver output. Defaults to 'cc.log'.
+        tuning_file_path (str, optional) : Filepath for .prm file giving tuning parameters
+            for Gurobi. 
             
     Attributes:
         objective (float): Objective value of the last solved problem.
     """
-    def __init__(self):
+    def __init__(self, tuning_file_path = None):
+        self.tuning_file_path = tuning_file_path
         self.objective = None
         
     
@@ -702,6 +697,9 @@ class ChamberlinCourantTiebreak(Election):
 
         env = gp.Env(params={"OutputFlag": 0}) # Silent mode
         model = gp.Model("ChamberlinCourant", env=env)
+        
+        if self.tuning_file_path is not None:
+            model.read(self.tuning_file_path)
         
         # Define binary variables
         x = model.addVars(n, m, vtype=GRB.BINARY, name="x")
@@ -937,25 +935,15 @@ class MonroeTiebreak(Election):
             (*Monroe constraint* -- each candidate can only represent a certain number of voters)
     
     Args:
-        solver (str, optional): Solver for the integer linear program. These are taken 
-            from PuLP's available solvers, for more information please see 
-            (https://coin-or.github.io/pulp/guides/how_to_configure_solvers.html).
-            
-            Some options 'PULP_CBC_CMD' and 'GUROBI_CMD' (requires licesnse).
-            Defaults to 'PULP_CBC_CMD', which uses PuLPs default coin and branch bound solver.
-            
-        log_path (str, optional): Path to log file for solver output. Defaults to 'monroe.log'.
+        tuning_file_path (str, optional) : Filepath for .prm file giving tuning parameters
+            for Gurobi. 
     
     Attributes:
         objective (float): Objective value of the last solved problem.
     """
-    def __init__(self, solver : str = 'PULP_CBC_CMD', log_path : str = None):
-        self.log_path = log_path
-        self.solver = pulp.getSolver(
-            solver,
-            msg = False,
-            logPath = log_path  
-        )
+    def __init__(self, tuning_file_path : str = None):
+        self.tuning_file_path = tuning_file_path
+        self.objective = None
     
     
     def elect(self, profile : NDArray, k : int) -> NDArray: 
@@ -974,6 +962,9 @@ class MonroeTiebreak(Election):
 
         env = gp.Env(params={"OutputFlag": 0}) # Silent mode
         model = gp.Model("ChamberlinCourant", env=env)
+        
+        if self.tuning_file_path is not None:
+            model.read(self.tuning_file_path)
         
         # Define binary variables
         x = model.addVars(n, m, vtype=GRB.BINARY, name="x")

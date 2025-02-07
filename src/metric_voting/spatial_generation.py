@@ -378,6 +378,7 @@ class GroupSpatial:
         voter_labels = np.array([item for sublist in voter_labels for item in sublist])
 
         # Compute Preference Profile
+        # (change to euclidean cost array if you want to do this really fast)
         cst_array = cost_array(voter_positions, candidate_positions, self.distance_fn)
         profile = cost_array_to_ranking(cst_array)
 

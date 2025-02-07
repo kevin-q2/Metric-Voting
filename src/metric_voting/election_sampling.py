@@ -372,3 +372,63 @@ def parallel_samples(
         results_list.append(result_dict)
 
     return results_list
+
+
+
+
+####################################################################################################
+
+
+def parallel_with_precomputed_samples(
+    precomputed_sample_list : List[Dict[str, Any]],
+    elections_dict : Dict[Callable, Dict[str, Any]],
+    n : int,
+    m : int,
+    k : int,
+    cpu_count : int = 8,
+    filename : str = None
+):
+    """
+    For a set of precomputed election settings, run elections in parallel and 
+    store the winning results.
+
+    Args:
+        precomputed_sample_list (List[Dict[str, Any]]): List of dictionaries where each dictionary
+            has keys 'voters' giving voter positions, 'candidates' giving candidate positions, 
+            and 'profile' giving the corresponding preference profile. 
+        elections_dict (dict[Callable Election, dict[str, Any]]): Election mechanism dictionary 
+            where keys are election mechanisms and their values are dictionaries with any additional
+            keyword arguments.
+        n (int): Number of voters
+        m (int) : Number of candidates
+        k (int): Number of candidates to elect.
+	    cpu_count (int, optional): Number of available cpus to use for processing. Defaults to 8.
+        filename (str, optional): Filename to save results to, optional but if None results
+            will not be saved.
+
+    Returns:
+        results_dict ([Dict[str, np.ndarray]): Dictionary which
+            contains the results of the election sampling
+
+    """
+    s = len(precomputed_sample_list)
+    result_dict = {election.__name__: np.zeros((s, m), dtype = bool)
+                       for election in elections_dict.keys()}
+            
+    parallel_results = Parallel(n_jobs=cpu_count, backend = 'loky')(
+        delayed(election_sample)(**input_sample, elections_dict = elections_dict, k = k)
+        for input_sample in precomputed_sample_list
+    )
+        
+    for i, winner_dict in enumerate(parallel_results):               
+        for name, idxs in winner_dict.items():
+            winner_mask = np.zeros(m, dtype=bool)
+            winner_mask[idxs.astype(np.int32)] = True
+            result_dict[name][i] = winner_mask
+            
+    if not filename is None:
+        np.savez_compressed(filename, **result_dict)
+
+    return result_dict
+    
+    

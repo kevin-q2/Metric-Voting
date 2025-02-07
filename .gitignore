@@ -166,6 +166,7 @@ cython_debug/
 *.txt
 *.sh
 *.log
+*.prm
 data/
 
 experiments/scottish_data/
