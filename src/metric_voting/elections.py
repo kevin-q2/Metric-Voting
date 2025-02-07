@@ -675,7 +675,7 @@ class ChamberlinCourantTiebreak(Election):
     Attributes:
         objective (float): Objective value of the last solved problem.
     """
-    def __init__(self, tuning_file_path = None):
+    def __init__(self, tuning_file_path : str = None):
         self.tuning_file_path = tuning_file_path
         self.objective = None
         
@@ -745,6 +745,9 @@ class ChamberlinCourantTiebreak(Election):
             elected_candidates = np.array([j for j in range(m) if y[j].Xn > 0.5])
             best_solutions.append(elected_candidates)
             best_values.append(obj_value)
+        
+        # This handles numerical errors -- solutions should be integer values anyways
+        best_values = np.round(best_values, decimals = 5)
         
         # Choose randomly among the best solutions available. 
         rand_solution_idx = tiebreak(best_values)[0]
@@ -1016,6 +1019,9 @@ class MonroeTiebreak(Election):
             elected_candidates = np.array([j for j in range(m) if y[j].Xn > 0.5])
             best_solutions.append(elected_candidates)
             best_values.append(obj_value)
+            
+        # This handles numerical errors -- solutions should be integer values anyways
+        best_values = np.round(best_values, decimals = 5)
         
         # Choose randomly among the best solutions available. 
         rand_solution_idx = tiebreak(best_values)[0]
