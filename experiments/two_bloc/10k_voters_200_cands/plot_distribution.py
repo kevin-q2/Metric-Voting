@@ -30,7 +30,7 @@ plt.rcParams.update({
 })
 
 input_file = 'data/two_bloc/10k_voters_200_cands/samples.npz'
-output_file = 'figures/two_bloc/10k_voters_200_cands/distribution2.png'
+output_file = 'figures/two_bloc/10k_voters_200_cands/distribution.png'
 
 loaded_data = np.load(input_file)
 result_dict = {key: loaded_data[key] for key in loaded_data.files}
@@ -43,7 +43,7 @@ plot_winner_distribution(
     xlim = [-4,4],
     ylim = [-4,4],
     colors = [colors[0], colors[10], colors[4]],
-    sample_fraction = 0.1,
+    sample_fraction = 0.25,
     random_seed = 42,
     output_file = output_file
 )

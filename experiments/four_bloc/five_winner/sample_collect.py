@@ -1,6 +1,6 @@
 import numpy as np
 from metric_voting.spatial_generation import *
-from metric_voting.election_sampling import samples
+from metric_voting.election_sampling import samples, parallel_samples
 from metric_voting.elections import *
 
 
@@ -52,7 +52,6 @@ elections_dict = {
     GreedyCC:{},
     Monroe:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/four_bloc/five_winner/monroe.log'},
     GreedyMonroe:{}, 
-    #PAV:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/four_bloc/five_winner/pav.log'},
     PluralityVeto:{},
     CommitteeVeto:{'q':k}, 
     ExpandingApprovals: {},
@@ -76,12 +75,13 @@ generator_input = [
      'candidate_group_sizes': [m]}
 ]
 
-result_list = samples(
+result_list = parallel_samples(
     n_samples,
     generator,
     elections_dict,
     generator_input,
     k,
     dim = 2,
+    cpu_count = 8,
     filename = f
 )

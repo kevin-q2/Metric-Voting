@@ -675,8 +675,9 @@ class ChamberlinCourantTiebreak(Election):
     Attributes:
         objective (float): Objective value of the last solved problem.
     """
-    def __init__(self, tuning_file_path : str = None):
+    def __init__(self, tuning_file_path : str = None, n_threads : int = 1):
         self.tuning_file_path = tuning_file_path
+        self.n_threads = n_threads
         self.objective = None
         
     
@@ -697,6 +698,7 @@ class ChamberlinCourantTiebreak(Election):
 
         env = gp.Env(params={"OutputFlag": 0}) # Silent mode
         model = gp.Model("ChamberlinCourant", env=env)
+        model.setParam("Threads", self.n_threads)
         
         if self.tuning_file_path is not None:
             model.read(self.tuning_file_path)
@@ -944,8 +946,9 @@ class MonroeTiebreak(Election):
     Attributes:
         objective (float): Objective value of the last solved problem.
     """
-    def __init__(self, tuning_file_path : str = None):
+    def __init__(self, tuning_file_path : str = None, n_threads : int = 1):
         self.tuning_file_path = tuning_file_path
+        self.n_threads = n_threads
         self.objective = None
     
     
@@ -965,6 +968,7 @@ class MonroeTiebreak(Election):
 
         env = gp.Env(params={"OutputFlag": 0}) # Silent mode
         model = gp.Model("ChamberlinCourant", env=env)
+        model.setParam("Threads", self.n_threads)
         
         if self.tuning_file_path is not None:
             model.read(self.tuning_file_path)

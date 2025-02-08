@@ -45,12 +45,9 @@ elections_dict = {
     Borda:{},
     STV:{'transfer_type' : 'weighted-fractional'},
     ChamberlinCourant:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_bloc/thousand_voters/cc.log'},
-    ChamberlinCourantTiebreak:{},
     GreedyCC:{},
     Monroe:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_bloc/thousand_voters/monroe.log'},
-    MonroeTiebreak:{},
     GreedyMonroe:{}, 
-    #PAV:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_bloc/thousand_voters/pav.log'},
     PluralityVeto:{},
     CommitteeVeto:{'q':k}, 
     ExpandingApprovals: {},
@@ -67,7 +64,7 @@ n_samples = 10000
 np.random.seed(918717)
 
 # and sample from them
-f = 'data/two_bloc/thousand_voters/samples_tiebreak.npz'
+f = 'data/two_bloc/thousand_voters/samples.npz'
 
 generator_input = [
     {'voter_group_sizes': group_sizes,

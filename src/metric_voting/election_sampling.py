@@ -1,6 +1,6 @@
 import numpy as np
 import pulp
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, parallel_config
 from typing import Dict, Callable, Any, List, Tuple
 from numpy.typing import NDArray
 
@@ -414,11 +414,13 @@ def parallel_with_precomputed_samples(
     s = len(precomputed_sample_list)
     result_dict = {election.__name__: np.zeros((s, m), dtype = bool)
                        for election in elections_dict.keys()}
-            
-    parallel_results = Parallel(n_jobs=cpu_count, backend = 'loky')(
-        delayed(election_sample)(**input_sample, elections_dict = elections_dict, k = k)
-        for input_sample in precomputed_sample_list
-    )
+    
+    parallel_results = None
+    with parallel_config(backend = 'loky', n_jobs=cpu_count, inner_max_num_threads=1):
+        parallel_results = Parallel()(
+            delayed(election_sample)(**input_sample, elections_dict = elections_dict, k = k)
+            for input_sample in precomputed_sample_list
+        )
         
     for i, winner_dict in enumerate(parallel_results):               
         for name, idxs in winner_dict.items():
