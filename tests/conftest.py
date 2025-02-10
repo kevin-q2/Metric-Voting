@@ -242,7 +242,6 @@ def permutation_with_last2():
 @pytest.fixture
 def permutation_with_noise1():
    prof = np.array(list(permutations([0,1,2,3]))).T
-   prof = np.array(list(permutations([0,1,2,3]))).T
    prof[:,0] = [1,0,2,3]
    return prof
    

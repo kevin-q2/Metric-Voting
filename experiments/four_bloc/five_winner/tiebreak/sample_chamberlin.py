@@ -25,7 +25,7 @@ n = 1000
 m = 20
 
 # And the number of winners for the election
-k = 4 
+k = 5
 
 
 # Load-precomputed samples:

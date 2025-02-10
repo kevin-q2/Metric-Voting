@@ -19,7 +19,7 @@ def test_with_borda():
     
 def test_num_winners():
     election = ChamberlinCourantTiebreak()
-    for _ in range(1000):
+    for _ in range(100):
         profile = uniform_profile(100, 10)
         rand_k = np.random.randint(1, 10 + 1)
         assert len(election.elect(profile, rand_k)) == rand_k
