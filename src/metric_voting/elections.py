@@ -728,8 +728,8 @@ class ChamberlinCourantTiebreak(Election):
         
         # Allow for multiple solutions
         model.setParam(GRB.Param.PoolSearchMode, 2)
-        # Store mutliple solutions (up at most 1000)
-        n_store = min(comb(m, k), 1000)
+        # Store mutliple solutions (up at most 100,000)
+        n_store = 100000
         model.setParam(GRB.Param.PoolSolutions, n_store)
         # Only store the global optima
         model.setParam(GRB.Param.PoolGap, 0.0)
@@ -1009,8 +1009,8 @@ class MonroeTiebreak(Election):
         
         # Allow for multiple solutions
         model.setParam(GRB.Param.PoolSearchMode, 2)
-        # Store mutliple solutions (up at most 1000)
-        n_store = min(comb(m, k), 1000)
+        # Store mutliple solutions (up at most 100,000)
+        n_store = 100000
         model.setParam(GRB.Param.PoolSolutions, n_store)
         # Only store the global optima
         model.setParam(GRB.Param.PoolGap, 0.0)
