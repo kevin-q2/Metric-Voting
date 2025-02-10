@@ -170,6 +170,7 @@ cython_debug/
 data/
 
 experiments/scottish_data/
+experiments/older/
 
 examples/stv_tiebreak.py
 examples/2bloc.ipynb
