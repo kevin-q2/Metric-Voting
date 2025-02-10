@@ -27,7 +27,7 @@ m = 20
 # And the number of winners for the election
 k = 4 
 
-
+# NOTE that this requires precomputed samples that may be obtained by running sample_collect.py
 # Load-precomputed samples:
 f = 'data/overlapping/samples.npz'
 loaded_data = np.load(f)

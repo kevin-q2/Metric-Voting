@@ -39,6 +39,9 @@ generator = GroupSpatial(
 )
 
 # Define elections
+# NOTE: Here the Chamberlin and Monroe elections do not use random tiebreaking -- that is
+# implemented and run in a separate tiebreak experiment (in the tiebreak folder)
+# which would need a gurobi license to run.
 elections_dict = {
     SNTV:{},
     Bloc:{},

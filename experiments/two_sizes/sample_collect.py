@@ -39,6 +39,9 @@ two_party_generator = GroupSpatial(
 )
 
 # Define elections
+# NOTE: Here the Chamberlin and Monroe elections do not use random tiebreaking -- that is
+# implemented and run in a separate tiebreak experiment (in the tiebreak folder)
+# which would need a gurobi license to run.
 elections_dict = {
     SNTV:{},
     Bloc:{},
@@ -50,7 +53,6 @@ elections_dict = {
     Monroe:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_sizes/monroe.log'},
     MonroeTiebreak:{},
     GreedyMonroe:{}, 
-    #PAV:{'solver' : 'GUROBI_CMD', 'log_path' : 'experiments/two_sizes/pav.log'},
     PluralityVeto:{},
     CommitteeVeto:{'q':k}, 
     ExpandingApprovals: {},
@@ -79,7 +81,7 @@ result_list = parallel_samples(
     generator_input,
     k,
     dim = 2,
-    cpu_count = 13,
+    cpu_count = 8,
     filename = f
 )
 

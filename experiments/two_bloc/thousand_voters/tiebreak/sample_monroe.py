@@ -26,7 +26,7 @@ m = 20
 # And the number of winners for the election
 k = 4 
 
-
+# NOTE that this requires precomputed samples that may be obtained by running sample_collect.py
 # Load-precomputed samples:
 f = 'data/two_bloc/thousand_voters/samples.npz'
 loaded_data = np.load(f)
@@ -55,10 +55,10 @@ elections_dict = {
 np.random.seed(918717)
 
 # and sample from them
-f = 'data/two_bloc/thousand_voters/tiebreak/samples_monroe' + str(sample_number) + '.npz'
+f = 'data/two_bloc/thousand_voters/tiebreak/samples_monroe8_' + str(sample_number) + '.npz'
 
-start = sample_number * 500
-end = start + 500
+start = (7 * 500) + sample_number * 100
+end = start + 100
 
 result_list = parallel_with_precomputed_samples(
     precomputed_sample_list[start:end],

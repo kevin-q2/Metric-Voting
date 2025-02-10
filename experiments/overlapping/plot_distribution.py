@@ -30,7 +30,7 @@ plt.rcParams.update({
 })
 
 input_file = 'data/overlapping/samples.npz'
-output_file = 'figures/overlapping/distribution2.png'
+output_file = 'figures/overlapping/distribution.png'
 
 loaded_data = np.load(input_file)
 result_dict = {key: loaded_data[key] for key in loaded_data.files}

@@ -21,7 +21,7 @@ detailed information and definitions please refer to [1, 2].
 9. A greedy Monroe approximation algorithm
 10. Two multi-winner extensions of Plurality Veto [3]
 11. Expanding Approvals [4]
-12. Multiple ariations on multi-winner Random Dictator
+12. Multiple variations on multi-winner Random Dictator
 
 ## Getting Started
 This repository is written in python and uses poetry to manage its dependencies.
@@ -52,7 +52,12 @@ Each specific experiment contains files:
   3. `plot_distribution.py` for plotting KDE's visualizing the samples in metric space.
 
 These may be run to re-create our experimental results. Once they have been run, additional plotting may 
-be created within `examples/4-experiment-plotting.ipynb`.
+be created within `examples/4-experiment-plotting.ipynb`. We note that 
+our standard versions of Chamberlin Courant and Monroe deterministically choose winners in the case
+of ties. We also have specialized ChamberlinCourantTiebreak and MonroeTiebreak election classes 
+which randomly break ties, however, running experiments for these elections requires a 
+license with gurobi. These are therefore presented as separate experiments within nested 
+`tiebreak/` folders for each experiment respectively.
 
 ## References
 [1] Faliszewski, Piotr, et al. "Multiwinner voting: A new challenge for social choice theory." Trends in computational social choice 74.2017 (2017): 27-47.

@@ -21,7 +21,8 @@ def plot_winner_distribution(
     xlim : List[float],
     ylim : List[float],
     colors : List[str],
-    sample_fraction : float = 0.01,
+    sample_fraction : float = 0.1,
+    kde_sample_fraction : float = 1,
     random_seed : int = None,
     output_file : str = None
 ):
@@ -53,6 +54,9 @@ def plot_winner_distribution(
         sample_fraction (float, optional): Fraction of the data to use for KDE plots.
             Otherwise plotting all the data takes a while to run without much added benefit.
             
+        kde_sample_fraction (float, optional): Portion of the sample fraction to devote to 
+            kde plots.
+            
         random_seed (int, optional): Seed for deterministic sampling results.
             
         output_file (str, optional): Filepath to save the plot to. If None, the plot will
@@ -81,11 +85,15 @@ def plot_winner_distribution(
     voter_stack = pd.DataFrame(np.vstack(results['voters']), columns = ['x','y'])
     # Use a smaller sample for KDE plots (otherwise takes a while to run without much added benefit)
     voter_stack_sample = voter_stack.sample(frac=sample_fraction, random_state=random_seed)
+    kde_voter_stack_sample = voter_stack_sample.sample(frac = kde_sample_fraction,
+                                                       random_state = random_seed)
 
     candidate_example = results['candidates'][example_idx]
     candidate_stack = pd.DataFrame(np.vstack(results['candidates']), columns = ['x','y'])
     # Use a smaller sample for KDE plots (otherwise takes a while to run without much added benefit)
     candidate_stack_sample = candidate_stack.sample(frac=sample_fraction, random_state=random_seed)
+    kde_candidate_stack_sample = candidate_stack_sample.sample(frac = kde_sample_fraction,
+                                                       random_state = random_seed)
 
     # Set x and y limits for scatter and example plots:
     '''
@@ -107,9 +115,9 @@ def plot_winner_distribution(
     '''
     
     # Plot the voter and candidate KDE distributions:
-    sns.kdeplot(data=voter_stack_sample, x='x', y='y', color = voter_color, fill=False,
+    sns.kdeplot(data=kde_voter_stack_sample, x='x', y='y', color = voter_color, fill=False,
                 thresh=0.1, levels=10, alpha = 1, ax = axes[0][0])
-    sns.kdeplot(data=candidate_stack_sample, x='x', y='y', color = candidate_color, fill=False,
+    sns.kdeplot(data=kde_candidate_stack_sample, x='x', y='y', color = candidate_color, fill=False,
                 thresh=0.1, levels=10, alpha = 0.9, ax = axes[0][0])
     axes[0][0].set_xlim(xlim)
     axes[0][0].set_ylim(ylim)
@@ -121,7 +129,7 @@ def plot_winner_distribution(
     axes[0][1].scatter(voter_stack_sample.iloc[:,0], voter_stack_sample.iloc[:,1],
                     facecolors = voter_color, edgecolors = 'none', alpha = 0.3, s = 5)
     axes[0][1].scatter(candidate_stack_sample.iloc[:,0], candidate_stack_sample.iloc[:,1],
-                    facecolors = candidate_color, edgecolors = 'none', alpha = 0.05, s = 5)
+                    facecolors = candidate_color, edgecolors = 'none', alpha = 0.025, s = 5)
     axes[0][1].set_xlim(xlim)
     axes[0][1].set_ylim(ylim)
     axes[0][1].set_title('Scatter')
@@ -145,11 +153,13 @@ def plot_winner_distribution(
         winner_example = Candidates[example_idx][winners[example_idx], :]
         winner_stack = pd.DataFrame(Candidates[winners], columns = ['x','y'])
         winner_stack_sample = winner_stack.sample(frac=sample_fraction, random_state=random_seed)
+        kde_winner_stack_sample = winner_stack_sample.sample(frac = kde_sample_fraction,
+                                                       random_state = random_seed)
         
         # Plot the KDE:
-        sns.kdeplot(data=voter_stack_sample, x='x', y='y', color = voter_color, fill=False,
+        sns.kdeplot(data=kde_voter_stack_sample, x='x', y='y', color = voter_color, fill=False,
                     thresh=0.1, levels=10, alpha = 1, ax = axes[ax_idx][0])
-        sns.kdeplot(data=winner_stack_sample, x='x', y='y', color = winner_color, fill=False,
+        sns.kdeplot(data=kde_winner_stack_sample, x='x', y='y', color = winner_color, fill=False,
                     thresh=0.1, levels=10, alpha = 0.7, ax = axes[ax_idx][0])
         
         if name == 'ChamberlinCourant':

@@ -26,7 +26,7 @@ m = 20
 # And the number of winners for the election
 k = 5
 
-
+# NOTE that this requires precomputed samples that may be obtained by running sample_collect.py
 # Load-precomputed samples:
 f = 'data/four_bloc/five_winner/samples.npz'
 loaded_data = np.load(f)

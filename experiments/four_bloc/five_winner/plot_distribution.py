@@ -30,7 +30,7 @@ plt.rcParams.update({
 })
 
 input_file = 'data/four_bloc/five_winner/samples.npz'
-output_file = 'figures/four_bloc/five_winner/distribution2.png'
+output_file = 'figures/four_bloc/five_winner/distribution.png'
 
 loaded_data = np.load(input_file)
 result_dict = {key: loaded_data[key] for key in loaded_data.files}

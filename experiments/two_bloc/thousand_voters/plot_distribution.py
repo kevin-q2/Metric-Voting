@@ -30,11 +30,12 @@ plt.rcParams.update({
 })
 
 input_file = 'data/two_bloc/thousand_voters/samples.npz'
-output_file = 'figures/two_bloc/thousand_voters/distribution2.png'
+output_file = 'figures/two_bloc/thousand_voters/distribution.png'
 
 loaded_data = np.load(input_file)
 result_dict = {key: loaded_data[key] for key in loaded_data.files}
 n_samples = result_dict['voters'].shape[0]
+
 
 
 plot_winner_distribution(
