@@ -142,6 +142,7 @@ def test_permutation_profile_with_noise1(permutation_with_noise1):
         
         
 def test_permutation_profile_with_noise2(permutation_with_noise2):
+    # Set n_threads?
     election = MonroeTiebreak()    
     samples = 1000
     winners = np.zeros(samples, dtype = int)

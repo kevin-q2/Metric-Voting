@@ -508,7 +508,8 @@ class ChamberlinCourant(Election):
     
     NOTE: This is a basic implementation of the linear program and it will not randomly 
     break ties between optimal solutions. The LP will choose the solution deterministically 
-    using its own tiebreaking mechanisms. See ChamberlinCourantTiebreak for controlled randomization.
+    using its own tiebreaking mechanisms. See ChamberlinCourantTiebreak for controlled
+    randomization.
     
     This is based on work from the following papers:
     "Achieving Fully Proportional Representation: Approximability Results"
@@ -632,7 +633,7 @@ class ChamberlinCourantTiebreak(Election):
     
     NOTE: This version of the function is specifically designed to randomly break ties.
 
-    Written by and attributed to: Peter Rock
+    A large portion of this code is written by and attributed to: Peter Rock, peter@mggg.org
 
     NOTE: Since this model uses Gurobi as an LP solver, 
     you will need a license to run larger elections.
@@ -769,6 +770,11 @@ class Monroe(Election):
     With the added constraint that each candidate can only represent
     exactly floor(n/k) or ceiling(n/k) voters.
     
+    NOTE: This is a basic implementation of the linear program and it will not randomly 
+    break ties between optimal solutions. The LP will choose the solution deterministically 
+    using its own tiebreaking mechanisms. See MonroeTiebreak for controlled
+    randomization.
+    
     This is based on work from the following papers:
     "Achieving Fully Proportional Representation: Approximability Results"
     Skowron et al (2013)
@@ -900,7 +906,7 @@ class MonroeTiebreak(Election):
     
     NOTE: This version of the function is specifically designed to randomly break ties.
 
-    Written by and attributed to: Peter Rock
+    A large portion of this code is written by and attributed to: Peter Rock, peter@mggg.org
 
     NOTE: Since this model uses Gurobi as an LP solver, 
     you will need a license to run larger elections.
@@ -1075,6 +1081,9 @@ class PAV(Election):
         solver : str = 'PULP_CBC_CMD',
         log_path : str = None
     ):
+        raise NotImplementedError("This class is not working currently. "
+                                  "Check for an update in a future release.") 
+
         self.scoring_scheme = scoring_scheme
         self.log_path = log_path
         self.solver = pulp.getSolver(

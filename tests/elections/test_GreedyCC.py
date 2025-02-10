@@ -1,5 +1,5 @@
 import numpy as np
-from metric_voting import GreedyCC, ChamberlinCourant, Borda
+from metric_voting import GreedyCC, ChamberlinCourantTiebreak, Borda
 from metric_voting import uniform_profile
 
 
@@ -50,10 +50,10 @@ def test_fp_tie_break(profile_with_fp_borda_tie):
 
 def test_with_chamberlin():
     election1 = GreedyCC()
-    election2 = ChamberlinCourant()
+    election2 = ChamberlinCourantTiebreak()
     
-    for _ in range(10):
-        profile = uniform_profile(200, 10)
+    for _ in range(100):
+        profile = uniform_profile(100, 10)
         rand_k = np.random.randint(1, 10 + 1)
         election1_winners = election1.elect(profile, rand_k)
         obj1 = election1.objective

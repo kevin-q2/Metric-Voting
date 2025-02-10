@@ -199,7 +199,7 @@ def test_heuristic_bloc():
     
     # Middle split:
     winner_indices = [4,5,6,7]
-    samples = 100
+    samples = 1000
     blocs = np.zeros((samples, n))
     for i in range(samples):
         bloc = heuristic_worst_bloc(cst_array, winner_indices)

@@ -10,7 +10,7 @@ def test_update_indices(simple_multiwinner_rd_profile):
     election.voter_current_ballot_position = np.array([0, 0, 0, 0, 0, 0])
     election.update_current_ballot_positions()
     
-    assert np.allclose(election.voter_indices, [2, 1, 2, 1, 0, 0])
+    assert np.allclose(election.voter_current_ballot_position, [2, 1, 2, 1, 0, 0])
     
 
 def test_single_winner(expanding_fp_tie_profile):
