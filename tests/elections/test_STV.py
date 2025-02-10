@@ -186,33 +186,34 @@ def test_weighted_fractional_with_votekit():
     m = 8
     k = 5
     #np.random.seed(99877)
-    prof = uniform_profile(n, m)
-    ballots = [Ballot(ranking = [{str(j)} for j in prof[:,i]], weight = 1) for i in range(n)]
-    votekit_prof = PreferenceProfile(ballots= ballots)
-    
-    samples = 1000
-    winner_dist = {frozenset(comb): 0 for comb in itertools.combinations(range(m), k)}
-    votekit_winner_dist = {frozenset(comb): 0 for comb in itertools.combinations(range(m), k)}
-    for i in range(samples):
-        stv = STV(transfer_type = 'weighted-fractional')
-        winners = stv.elect(prof, k)
-        winner_dist[frozenset(winners)] += 1
+    for _ in range(10):
+        prof = uniform_profile(n, m)
+        ballots = [Ballot(ranking = [{str(j)} for j in prof[:,i]], weight = 1) for i in range(n)]
+        votekit_prof = PreferenceProfile(ballots= ballots)
         
-        with contextlib.redirect_stdout(None):
-            election = votekit_STV(votekit_prof, k, transfer = fractional_transfer)
-            votekit_winners = election.get_elected()
+        samples = 1000
+        winner_dist = {frozenset(comb): 0 for comb in itertools.combinations(range(m), k)}
+        votekit_winner_dist = {frozenset(comb): 0 for comb in itertools.combinations(range(m), k)}
+        for i in range(samples):
+            stv = STV(transfer_type = 'weighted-fractional')
+            winners = stv.elect(prof, k)
+            winner_dist[frozenset(winners)] += 1
             
-        votekit_winners = [int(winner) for winner_set in
-                            votekit_winners for winner in list(winner_set)]
-        votekit_winner_dist[frozenset(votekit_winners)] += 1
+            with contextlib.redirect_stdout(None):
+                election = votekit_STV(votekit_prof, k, transfer = fractional_transfer)
+                votekit_winners = election.get_elected()
+                
+            votekit_winners = [int(winner) for winner_set in
+                                votekit_winners for winner in list(winner_set)]
+            votekit_winner_dist[frozenset(votekit_winners)] += 1
+            
+        tv_distance = 0
+        for wset in winner_dist.keys():
+            tv_distance += abs(winner_dist[wset]/samples - votekit_winner_dist[wset]/samples)
+        tv_distance /= 2
         
-    tv_distance = 0
-    for wset in winner_dist.keys():
-        tv_distance += abs(winner_dist[wset]/samples - votekit_winner_dist[wset]/samples)
-    tv_distance /= 2
-    
-    #breakpoint()
-    assert tv_distance < 0.05
+        #breakpoint()
+        assert tv_distance < 0.05
 
 
 def test_cambridge_with_votekit():
@@ -220,30 +221,31 @@ def test_cambridge_with_votekit():
     m = 8
     k = 5
     #np.random.seed(99877)
-    prof = uniform_profile(n, m)
-    ballots = [Ballot(ranking = [{str(j)} for j in prof[:,i]], weight = 1) for i in range(n)]
-    votekit_prof = PreferenceProfile(ballots= ballots)
-    
-    samples = 1000
-    winner_dist = {frozenset(comb): 0 for comb in itertools.combinations(range(m), k)}
-    votekit_winner_dist = {frozenset(comb): 0 for comb in itertools.combinations(range(m), k)}
-    for i in range(samples):
-        stv = STV(transfer_type = 'cambridge')
-        winners = stv.elect(prof, k)
-        winner_dist[frozenset(winners)] += 1
+    for _ in range(10):
+        prof = uniform_profile(n, m)
+        ballots = [Ballot(ranking = [{str(j)} for j in prof[:,i]], weight = 1) for i in range(n)]
+        votekit_prof = PreferenceProfile(ballots= ballots)
         
-        with contextlib.redirect_stdout(None):
-            election = votekit_STV(votekit_prof, k, transfer = random_transfer)
-            votekit_winners = election.get_elected()
+        samples = 1000
+        winner_dist = {frozenset(comb): 0 for comb in itertools.combinations(range(m), k)}
+        votekit_winner_dist = {frozenset(comb): 0 for comb in itertools.combinations(range(m), k)}
+        for i in range(samples):
+            stv = STV(transfer_type = 'cambridge')
+            winners = stv.elect(prof, k)
+            winner_dist[frozenset(winners)] += 1
             
-        votekit_winners = [int(winner) for winner_set in
-                            votekit_winners for winner in list(winner_set)]
-        votekit_winner_dist[frozenset(votekit_winners)] += 1
+            with contextlib.redirect_stdout(None):
+                election = votekit_STV(votekit_prof, k, transfer = random_transfer)
+                votekit_winners = election.get_elected()
+                
+            votekit_winners = [int(winner) for winner_set in
+                                votekit_winners for winner in list(winner_set)]
+            votekit_winner_dist[frozenset(votekit_winners)] += 1
+            
+        tv_distance = 0
+        for wset in winner_dist.keys():
+            tv_distance += abs(winner_dist[wset]/samples - votekit_winner_dist[wset]/samples)
+        tv_distance /= 2
         
-    tv_distance = 0
-    for wset in winner_dist.keys():
-        tv_distance += abs(winner_dist[wset]/samples - votekit_winner_dist[wset]/samples)
-    tv_distance /= 2
-    
-    #breakpoint()
-    assert tv_distance < 0.05
+        #breakpoint()
+        assert tv_distance < 0.05
