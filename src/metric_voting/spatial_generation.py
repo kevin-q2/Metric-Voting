@@ -1,5 +1,7 @@
 import numpy as np
-from .utils import euclidean_distance
+import warnings
+from .measurements import cost_array
+from .utils import euclidean_distance, cost_array_to_ranking, tiebreak
 from numpy.typing import NDArray
 from typing import Callable, Dict, Tuple, Any, List, Optional, Union
 
@@ -14,7 +16,6 @@ class Spatial:
     with the sampled positions (respects distances). 
 
     Args:
-        m (int): Number of candidates.
         voter_dist_fn (Callable[..., np.ndarray], optional): Distribution to sample a single
             voter's position from, defaults to uniform distribution.
         voter_dist_fn_params: (dict[str, Any], optional): Parameters to be passed to
@@ -30,7 +31,6 @@ class Spatial:
             defaults to euclidean distance.
 
     Attributes:
-        m (int): Number of candidates.
         voter_dist_fn (Callable[..., np.ndarray], optional): Distribution to sample a single
             voter's position from, defaults to uniform distribution.
         voter_dist_fn_params: (dict[str, Any], optional): Parameters to be passed to
@@ -121,7 +121,9 @@ class Spatial:
                 position of candidate i in metric space. 
             voter_positions (NDArray): A n x d matrix where each row i contains the
                 position of voter i in metric space.
-            voter_labels (NDArray): A n x 1 array where each element i contains the
+            candidate_labels (NDArray): A length m array where each element i contains the
+                group label for voter i.
+            voter_labels (NDArray): A length n array where each element i contains the
                 group label for voter i.
         """
         # Sample Candidate Positions
@@ -134,19 +136,14 @@ class Spatial:
             [self.voter_dist_fn(**self.voter_dist_fn_params) for _ in range(n)]
         )
 
+        candidate_labels = np.zeros(m)
         voter_labels = np.zeros(n)
         
         # Compute Preference Profile
-        profile = np.zeros((m, n), dtype=np.int64)
-        for i in range(n):
-            distances = [
-                self.distance_fn(voter_positions[i, :], candidate_positions[j, :])
-                for j in range(m)
-            ]
-            ranking = np.argsort(distances)
-            profile[:, i] = ranking
+        cst_array = cost_array(voter_positions, candidate_positions, self.distance_fn)
+        profile = cost_array_to_ranking(cst_array)
 
-        return profile, candidate_positions, voter_positions, voter_labels
+        return profile, candidate_positions, voter_positions, candidate_labels, voter_labels
 
 
 class GroupSpatial:
@@ -227,7 +224,7 @@ class GroupSpatial:
             
             if len(voter_dist_fns) != n_voter_groups:
                 raise ValueError(
-                    "Group size does not match with given voter distributions"
+                    "Group size does not match with given voter distributions."
                 )
 
             self.voter_dist_fns = voter_dist_fns
@@ -242,7 +239,7 @@ class GroupSpatial:
             
             if len(candidate_dist_fns) != n_candidate_groups:
                 raise ValueError(
-                    "Group size does not match with given candidate distributions"
+                    "Group size does not match with given candidate distributions."
                 )
 
             self.candidate_dist_fns = candidate_dist_fns
@@ -278,7 +275,7 @@ class GroupSpatial:
                     self.candidate_dist_fn_params[i] = {"low": 0.0, "high": 1.0, "size": 2}
                 else:
                     raise ValueError(
-                        "No parameters were given for the input voter distribution."
+                        "No parameters were given for the input candidate distribution."
                     )
                 # Peter Note: Check to make sure that the kwargs are valid params for the
                 # callables used in the distribution function
@@ -338,7 +335,9 @@ class GroupSpatial:
                 position of candidate i in metric space. 
             voter_positions (NDArray): A n x d matrix where each row i contains the
                 position of voter i in metric space.
-            voter_labels (NDArray): A n x 1 array where each element i contains the
+            candidate_labels (NDArray): A length m array where each element i contains the
+                group label for voter i.
+            voter_labels (NDArray): A length n array where each element i contains the
                 group label for voter i.
         """
 
@@ -361,6 +360,9 @@ class GroupSpatial:
         ]
         candidate_positions = np.vstack(candidate_positions)
         
+        candidate_labels = [[i] * candidate_group_sizes[i] for i in range(self.n_candidate_groups)]
+        candidate_labels = np.array([item for sublist in candidate_labels for item in sublist])
+        
         # Sample Voter Positions
         voter_positions = [
             [
@@ -376,16 +378,12 @@ class GroupSpatial:
         voter_labels = np.array([item for sublist in voter_labels for item in sublist])
 
         # Compute Preference Profile
-        profile = np.zeros((m, n), dtype=np.int64)
-        for i in range(n):
-            distances = [
-                self.distance_fn(voter_positions[i, :], candidate_positions[j, :])
-                for j in range(m)
-            ]
-            ranking = np.argsort(distances)
-            profile[:, i] = ranking
+        # (change to euclidean cost array if you want to do this really fast)
+        cst_array = cost_array(voter_positions, candidate_positions, self.distance_fn)
+        profile = cost_array_to_ranking(cst_array)
 
-        return profile, candidate_positions, voter_positions, voter_labels
+
+        return profile, candidate_positions, voter_positions, candidate_labels, voter_labels
 
 
 
@@ -491,19 +489,20 @@ class ProbabilisticGroupSpatial(GroupSpatial):
                 position of candidate i in metric space. 
             voter_positions (NDArray): A n x d matrix where each row i contains the
                 position of voter i in metric space.
-            voter_labels (NDArray): A n x 1 array where each element i contains the
+            candidate_labels (NDArray): A length m array where each element i contains the
                 group label for voter i.
-            candidate_labels (NDArray): A m x 1 array where each element i contains the
-                group label for candidate i.
+            voter_labels (NDArray): A length n array where each element i contains the
+                group label for voter i.
         """
         
         if len(voter_group_probs) != self.n_voter_groups:
-            raise ValueError("Number of voter groups is inconsistent with n_voter_groups.")
+            raise ValueError("Number of voter probabilities is inconsistent with n_voter_groups.")
         if len(candidate_group_probs) != self.n_candidate_groups:
-            raise ValueError("Number of candidate groups is inconsistent with n_candidate_groups.")
+            raise ValueError("Number of candidate probabilities "
+                             "is inconsistent with n_candidate_groups.")
         
         if sum(voter_group_probs) != 1:
-            raise ValueError("Candidate group probabilities do not sum to 1.")
+            raise ValueError("Voter group probabilities do not sum to 1.")
         if sum(candidate_group_probs) != 1:
             raise ValueError("Candidate group probabilities do not sum to 1.")
         
@@ -517,7 +516,196 @@ class ProbabilisticGroupSpatial(GroupSpatial):
         candidate_group_sizes = [np.sum(candidate_labels == i)
                                  for i in range(self.n_candidate_groups)]
         
-        profile, candidate_positions, voter_positions, _ = super().generate(voter_group_sizes,
-                                                                            candidate_group_sizes)
-        return profile, candidate_positions, voter_positions, voter_labels, candidate_labels
+        (profile, candidate_positions, voter_positions,
+         candidate_labels, voter_labels) = super().generate(
+             voter_group_sizes,
+            candidate_group_sizes
+        )
+        return profile, candidate_positions, voter_positions, candidate_labels, voter_labels
+    
+    
+
+class RankedSpatial:
+    """
+    NOTE: This class/method of spatial generation is still a work in progress. It has not 
+    been thorougly tested yet! I hope to get to this soon!
+    
+    Given a ranked preference profile and a set of candidate positions, 
+    generates a set of voter positions that are consistent with each voters ranking.
+    
+    Args:
+        voter_dist_fn (Callable[..., np.ndarray], optional): Distribution to sample a single
+            voter's position from, defaults to uniform distribution.
+        voter_dist_fn_params: (dict[str, Any], optional): Parameters to be passed to
+            voter_dist_fn, defaults to None,
+            which creates the unif(0,1) distribution in 2 dimensions.
+        distance_fn: (Callable[[np.ndarray, np.ndarray], float]], optional):
+            Computes distance between a voter and a candidate,
+            defaults to euclidean distance.
+
+    Attributes:
+        voter_dist_fn (Callable[..., np.ndarray], optional): Distribution to sample a single
+            voter's position from, defaults to uniform distribution.
+        voter_dist_fn_params: (dict[str, Any], optional): Parameters to be passed to
+            voter_dist_fn, defaults to None, 
+            which creates the unif(0,1) distribution in 2 dimensions.
+        distance_fn: (Callable[[np.ndarray, np.ndarray], float]], optional):
+            Computes distance between a voter and a candidate,
+            defaults to euclidean distance.
+    """
+    def __init__(
+        self,
+        voter_dist_fn: Callable = np.random.uniform,
+        voter_dist_fn_params: Dict[str, Any] = None,
+        distance_fn: Callable =euclidean_distance
+    ):
+        # See note above.
+        warnings.warn("This spatial generation method has not been thoroughly tested.")
         
+        self.voter_dist_fn = voter_dist_fn
+
+        if voter_dist_fn_params is None:
+            if voter_dist_fn is np.random.uniform:
+                self.voter_dist_fn_params = {"low": 0.0, "high": 1.0, "size": 2.0}
+            else:
+                raise ValueError(
+                    "No parameters were given for the input voter distribution."
+                )
+        else:
+            try:
+                self.voter_dist_fn(**voter_dist_fn_params)
+            except TypeError:
+                raise TypeError("Invalid parameters for the voter distribution.")
+
+            self.voter_dist_fn_params = voter_dist_fn_params
+
+        try:
+            v = self.voter_dist_fn(**self.voter_dist_fn_params)
+            c = self.voter_dist_fn(**self.voter_dist_fn_params)
+            distance_fn(v, c)
+        except TypeError:
+            raise ValueError(
+                "Distance function is invalid or incompatible "
+                "with voter/candidate distributions."
+            )
+
+        self.distance_fn = distance_fn
+        
+    def uniform_ranking_sample(
+        self,
+        ranking : NDArray,
+        candidate_positions : NDArray
+    ) -> NDArray:
+        """
+        Given a partial ranking of candidates, generates a voter position
+        that is consistent with the ranking.
+        
+        Args:
+            ranking (NDArray): A partial ranking of candidates.
+            candidate_positions (NDArray): A m x d matrix where each row i contains the
+                position of candidate i in metric space.
+                
+        Returns:
+            sample (NDArray): A d-dimensional vector representing a voter's position.
+        """
+        sample = None
+        found = False
+        iters = 0
+        while not found:
+            iters += 1
+            x = self.voter_dist_fn(**self.voter_dist_fn_params)
+            cand_distances = np.linalg.norm(candidate_positions - x, axis = 1)
+            distance_ranking = tiebreak(cand_distances)
+            if np.array_equal(ranking, distance_ranking[:len(ranking)]):
+                sample = x
+                found = True
+            if iters > 1000000:
+                raise ValueError(
+                    'Could not find valid position within 1 million samples, '
+                    'try increasing the dimension.'
+                )
+        return sample
+
+
+    def generate(
+        self,
+        n : int,
+        m : int,
+        profile : NDArray,
+        candidate_positions : NDArray,
+        candidate_labels : Optional[NDArray] = None,
+        voter_labels : Optional[NDArray] = None,
+    ) -> Tuple[NDArray, NDArray, NDArray, NDArray]:
+        """
+        Samples a metric position for n voters from
+        the voter distribution. Samples a metric position for each candidate
+        from the input candidate distribution. With sampled
+        positions, this method then creates a ranked preference profile in which
+        voter's preferences are consistent with their distances to the candidates
+        in the metric space.
+
+        Args:
+            profile (NDArray): A m x n preference profile with each column j containing
+                voter j's rankings for each of the m candidates.
+            candidate_positions (NDArray): A m x d matrix where each row i contains the
+                position of candidate i in metric space.
+            candidate_labels (NDArray): A length n array where each element i contains the
+                group label for candidate i. Defaults to None, in which case distinct labels 
+                are given to each candidate.
+            voter_labels (NDArray): A length n array where each element i contains the
+                group label for voter i. Defaults to None, in which case voter labels 
+                are assigned as the group label of the candidate they rank first.
+            
+        Returns:
+            profile (NDArray): A m x n preference profile with each column j containing 
+                voter j's rankings for each of the m candidates.
+            candidate_positions (NDArray): A m x d matrix where each row i contains the
+                position of candidate i in metric space. 
+            voter_positions (NDArray): A n x d matrix where each row i contains the
+                position of voter i in metric space.
+            candidate_labels (NDArray): A length m array where each element i contains the
+                group label for voter i.
+            voter_labels (NDArray): A length n array where each element i contains the
+                group label for voter i.
+        """
+        if profile.shape[0] != m:
+            raise ValueError(
+                "Number of candidates in profile does not match number of candidates given."
+            )
+            
+        if profile.shape[1] != n:
+            raise ValueError(
+                "Number of voters in profile does not match number of voters given."
+            )
+            
+        if candidate_positions.shape[0] != m:
+            raise ValueError(
+                "Number of candidates in the position array "
+                "does not match number of candidates given."
+            )
+            
+        _,d = candidate_positions.shape
+        
+        voter_positions = np.zeros((n,d))
+        for i in range(n):
+            ranking = profile[:,i]
+            ranking = ranking[ranking != -1]
+            voter_positions[i,:] = self.uniform_ranking_sample(ranking, candidate_positions)
+
+        if candidate_labels is None:
+            candidate_labels = np.arange(m)
+        
+        if voter_labels is None:
+            voter_labels = candidate_labels[profile[0,:]]
+        
+        # Recompute Preference Profile (Since the original may have been incomplete)
+        cst_array = cost_array(voter_positions, candidate_positions, self.distance_fn)
+        complete_profile = cost_array_to_ranking(cst_array)
+
+        return (
+            complete_profile,
+            candidate_positions,
+            voter_positions,
+            candidate_labels,
+            voter_labels
+        )

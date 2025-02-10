@@ -163,27 +163,21 @@ cython_debug/
 
 
 # Files
-code/votekit_election_sampling.py
-figures/older/
-*.sh
 *.txt
+*.sh
+*.log
+*.prm
+data/
 
-batch/four_party_sample_collect2.py
-batch/four_party_sample_collect3.py
-batch/two_party_sample_collect2.py
-batch/four_party_sample_collect4.py
-batch/two_party_sample_collect3.py
-batch/plot_violin2.py
-batch/plot_distribution2.py
+experiments/scottish_data/
+experiments/older/
 
-data/2bloc_10k.npz
-data/2bloc_separated.npz
-data/4bloc_10k.npz
-data/4bloc_5cand.npz
-data/4bloc_10k_5cand.npz
-data/square.npz
-data/disc.npz
-data/gaussian.npz
-data/four_gaussian.npz
+examples/stv_tiebreak.py
+examples/2bloc.ipynb
+examples/grid.ipynb
+examples/worst_bloc.ipynb
+examples/older_experiments.ipynb
+examples/CC_testing.ipynb
 
 .envrc
+.python-version
